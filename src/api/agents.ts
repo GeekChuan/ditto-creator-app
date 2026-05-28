@@ -25,9 +25,8 @@ export interface AgentRunResponse {
 
 export const agentsApi = {
   getAgentList: (): Promise<AgentMeta[]> =>
-    http.get('/agents'),
+    http.get('/api/v1/agents'),
 
   runAgent: (agentId: string, body: AgentRunRequest): Promise<AgentRunResponse> =>
-    http.post(`/agents/${agentId}/run`, body, { timeout: 180_000 }),
+    http.post(`/api/v1/agents/${agentId}/run`, body, { timeout: 180_000 }),
 }
-

@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getToken } from './authStorage'
 
 const learnerAdminHttp = axios.create({
-  baseURL: import.meta.env.VITE_LEARNER_ADMIN_API_BASE_URL || 'http://localhost:8001/api/v1',
+  baseURL: import.meta.env.VITE_LEARNER_ADMIN_API_BASE_URL || 'http://localhost:8001',
   timeout: 15000,
 })
 
@@ -31,8 +31,9 @@ export interface LearnerOverview {
 }
 
 export const learnerAdminApi = {
-  getOverview: (): Promise<LearnerOverview> => learnerAdminHttp.get('/learner-admin/overview'),
-  listUsers: (): Promise<{ total: number; items: LearnerAdminUser[] }> => learnerAdminHttp.get('/learner-admin/users'),
+  getOverview: (): Promise<LearnerOverview> => learnerAdminHttp.get('/api/v1/learner-admin/overview'),
+  listUsers: (): Promise<{ total: number; items: LearnerAdminUser[] }> =>
+    learnerAdminHttp.get('/api/v1/learner-admin/users'),
   updateStatus: (id: string, isActive: boolean): Promise<LearnerAdminUser> =>
-    learnerAdminHttp.patch(`/learner-admin/users/${id}`, { is_active: isActive }),
+    learnerAdminHttp.patch(`/api/v1/learner-admin/users/${id}`, { is_active: isActive }),
 }

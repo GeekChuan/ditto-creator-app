@@ -134,10 +134,10 @@ export interface SubtitleData {
 
 export const assetsApi = {
   list: (params?: AssetListParams): Promise<PaginatedAssets> =>
-    http.get('/assets', { params }),
+    http.get('/api/v1/assets', { params }),
 
   presign: (body: PresignRequest): Promise<PresignResponse> =>
-    http.post('/assets/presign', body),
+    http.post('/api/v1/assets/presign', body),
 
   inferContentType: (filename: string, fileType?: string): string => {
     if (fileType && fileType.trim()) return fileType
@@ -190,19 +190,19 @@ export const assetsApi = {
   },
 
   create: (body: VideoAssetCreate): Promise<VideoAsset> =>
-    http.post('/assets', body),
+    http.post('/api/v1/assets', body),
 
   importFromXiaohongshu: (body: XiaohongshuImportRequest): Promise<VideoAsset> =>
-    http.post('/assets/import/xiaohongshu', body, { timeout: 0 }),
+    http.post('/api/v1/assets/import/xiaohongshu', body, { timeout: 0 }),
 
   minimaxTts: (body: MinimaxTtsRequest): Promise<MinimaxTtsResponse> =>
-    http.post('/assets/tts/minimax', body, { timeout: 120_000 }),
+    http.post('/api/v1/assets/tts/minimax', body, { timeout: 120_000 }),
 
   update: (id: string, body: VideoAssetUpdate): Promise<VideoAsset> =>
-    http.patch(`/assets/${id}`, body),
+    http.patch(`/api/v1/assets/${id}`, body),
 
   getPlaybackUrl: (body: PlaybackUrlRequest): Promise<PlaybackUrlResponse> =>
-    http.post('/assets/playback-url', body, {
+    http.post('/api/v1/assets/playback-url', body, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',
@@ -210,8 +210,8 @@ export const assetsApi = {
     }),
 
   createSubtitleTask: (assetId: string, body: SubtitleTaskCreate): Promise<SubtitleTask> =>
-    http.post(`/assets/${assetId}/subtitle-tasks`, body),
+    http.post(`/api/v1/assets/${assetId}/subtitle-tasks`, body),
 
   getSubtitle: (assetId: string): Promise<SubtitleData> =>
-    http.get(`/assets/${assetId}/subtitle`),
+    http.get(`/api/v1/assets/${assetId}/subtitle`),
 }

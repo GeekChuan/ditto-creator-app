@@ -32,16 +32,15 @@ export interface LoginResponse {
 }
 
 export const authApi = {
-  register: (body: RegisterPayload): Promise<UserInfo> => http.post('/auth/register', body),
-  login: (body: LoginPayload): Promise<LoginResponse> => http.post('/auth/login', body),
-  me: (): Promise<UserInfo> => http.get('/auth/me'),
+  register: (body: RegisterPayload): Promise<UserInfo> => http.post('/api/v1/auth/register', body),
+  login: (body: LoginPayload): Promise<LoginResponse> => http.post('/api/v1/auth/login', body),
+  me: (): Promise<UserInfo> => http.get('/api/v1/auth/me'),
   listUsers: (params?: { page?: number; page_size?: number; keyword?: string }): Promise<UserListResponse> =>
-    http.get('/users', { params }),
-  createUser: (body: CreateUserPayload): Promise<UserInfo> => http.post('/users', body),
+    http.get('/api/v1/users', { params }),
+  createUser: (body: CreateUserPayload): Promise<UserInfo> => http.post('/api/v1/users', body),
   renameUser: (userId: string, username: string): Promise<UserInfo> =>
-    http.put(`/users/${userId}`, { username }),
-  deleteUser: (userId: string): Promise<void> => http.delete(`/users/${userId}`),
+    http.put(`/api/v1/users/${userId}`, { username }),
+  deleteUser: (userId: string): Promise<void> => http.delete(`/api/v1/users/${userId}`),
   resetPassword: (userId: string, newPassword: string): Promise<UserInfo> =>
-    http.post(`/users/${userId}/reset-password`, { new_password: newPassword }),
+    http.post(`/api/v1/users/${userId}/reset-password`, { new_password: newPassword }),
 }
-

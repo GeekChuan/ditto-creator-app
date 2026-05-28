@@ -22,8 +22,7 @@ export interface VideoMetadataBundleOut {
 
 export const videoMetadataApi = {
   getActiveTask: (assetId: string): Promise<VideoMetadataTaskOut> =>
-    http.get(`/assets/${assetId}/metadata-tasks/active`),
+    http.get(`/api/v1/assets/${assetId}/metadata-tasks/active`),
   getBundle: (assetId: string): Promise<VideoMetadataBundleOut> =>
-    http.get(`/assets/${assetId}/metadata`),
+    http.get(`/api/v1/assets/${assetId}/metadata`),
 }
-

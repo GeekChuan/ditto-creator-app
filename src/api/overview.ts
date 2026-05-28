@@ -5,5 +5,5 @@ export interface ProjectOverview {
 }
 
 export const overviewApi = {
-  getOverview: (): Promise<ProjectOverview> => http.get('/overview'),
+  getOverview: (): Promise<ProjectOverview> => http.get('/api/v1/overview'),
 }

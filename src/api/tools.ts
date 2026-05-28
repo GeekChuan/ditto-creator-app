@@ -65,11 +65,11 @@ export interface WordLookupResult {
 
 export const toolsApi = {
   getToolList: (): Promise<ToolMeta[]> =>
-    http.get('/tools'),
+    http.get('/api/v1/tools'),
 
   getToolSchema: (toolId: string): Promise<ToolSchemaResponse> =>
-    http.get(`/tools/${toolId}/schema`),
+    http.get(`/api/v1/tools/${toolId}/schema`),
 
   runTool: (toolId: string, body: ToolRunRequest): Promise<ToolRunResponse> =>
-    http.post(`/tools/${toolId}/run`, body, { timeout: 180_000 }),
+    http.post(`/api/v1/tools/${toolId}/run`, body, { timeout: 180_000 }),
 }

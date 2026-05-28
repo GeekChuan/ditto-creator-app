@@ -8,7 +8,7 @@ export interface TranslateLessonTextResponse {
 
 export const lessonDesignApi = {
   translateLessonText: (body: { direction: TranslateLessonDirection; text: string }) =>
-    http.post('/dev/translate-lesson-text', body, {
+    http.post('/api/v1/dev/translate-lesson-text', body, {
       timeout: 120_000,
     }) as Promise<TranslateLessonTextResponse>,
 }
