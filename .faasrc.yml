@@ -1,0 +1,12 @@
+build:
+  image: registry.llsops.com/library/node:20
+  script:
+    - node -v && npm -v
+    - npm i -g pnpm@10 && pnpm -v
+    - pnpm config set allow-scripts true
+    - pnpm install --frozen-lockfile --production=false
+    - chmod +x ./faas-build.sh
+    - ./faas-build.sh
+package:
+  artifact:
+    dir: dist

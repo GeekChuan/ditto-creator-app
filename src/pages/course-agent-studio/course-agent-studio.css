@@ -1,0 +1,271 @@
+/* ── 背景 ── */
+.cas-root {
+  min-height: calc(100vh - 64px - 48px);
+  background: linear-gradient(160deg, #f0f1f8 0%, #eaecf8 40%, #f5f0fc 100%);
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+}
+
+.cas-root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ── 主输入卡 ── */
+.cas-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 40px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: box-shadow 0.3s ease;
+}
+
+.cas-card:hover {
+  box-shadow:
+    0 12px 56px rgba(99, 102, 241, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+/* ── 视频拖放区 ── */
+.cas-dropzone {
+  border: 2px dashed rgba(99, 102, 241, 0.25);
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.03);
+  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+
+.cas-dropzone:hover,
+.cas-dropzone.dragging {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.cas-dropzone.has-video {
+  border-style: solid;
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(99, 102, 241, 0.04);
+}
+
+/* ── 选项 chip ── */
+.cas-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  color: #374151;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.cas-chip:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
+  color: #4f46e5;
+}
+
+.cas-chip.active {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+/* ── 主 CTA 按钮 ── */
+.cas-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+  letter-spacing: 0.3px;
+}
+
+.cas-cta-btn:hover:not(:disabled) {
+  background: #1e293b;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.4);
+  transform: translateY(-1px);
+}
+
+.cas-cta-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cas-cta-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Agent 面板 ── */
+.cas-workbench {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 24px rgba(99, 102, 241, 0.08);
+  animation: cas-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── 日志终端 ── */
+.cas-log-terminal {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #94a3b8;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.cas-log-terminal .log-line {
+  display: block;
+  animation: cas-fadein 0.2s ease;
+  white-space: pre;
+}
+
+.cas-log-terminal .log-line.highlight {
+  color: #a5f3fc;
+}
+
+.cas-log-terminal .log-line.success {
+  color: #86efac;
+}
+
+/* ── 步骤时间线 ── */
+.cas-step-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.cas-step-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.cas-step-dot.pending {
+  background: #e5e7eb;
+}
+
+.cas-step-dot.running {
+  background: #6366f1;
+  animation: cas-pulse 1.2s infinite;
+}
+
+.cas-step-dot.done {
+  background: #22c55e;
+}
+
+/* ── 全局进度条光带 ── */
+.cas-progress-bar {
+  height: 4px;
+  border-radius: 100px;
+  background: linear-gradient(90deg, #6366f1, #a78bfa, #6366f1);
+  background-size: 200% 100%;
+  animation: cas-shimmer 1.8s linear infinite;
+  transition: width 0.6s ease;
+}
+
+/* ── 状态点脉冲 ── */
+.cas-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: cas-pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── CompletionPanel 节点卡 ── */
+.cas-node-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: box-shadow 0.15s;
+  animation: cas-fadein 0.3s ease both;
+}
+
+.cas-node-card:hover {
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ── 演示模式（demo mode）── */
+.cas-demo-mode .cas-log-terminal {
+  font-size: 14px;
+  max-height: 280px;
+}
+
+.cas-demo-mode .cas-cta-btn {
+  font-size: 16px;
+  padding: 13px 28px;
+}
+
+.cas-demo-mode .cas-step-row {
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+/* ── Keyframes ── */
+@keyframes cas-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.55; transform: scale(1.25); }
+}
+
+@keyframes cas-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes cas-fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cas-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cas-fade-scale {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
