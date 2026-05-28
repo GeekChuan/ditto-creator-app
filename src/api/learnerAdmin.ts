@@ -2,7 +2,7 @@ import axios from 'axios'
 import { getToken } from './authStorage'
 
 const learnerAdminHttp = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
+  baseURL: import.meta.env.VITE_LEARNER_ADMIN_API_BASE_URL || 'http://localhost:8001',
   timeout: 15000,
 })
 
