@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Modal } from 'antd'
-import { DittoVideoPlayer } from '@ditto/ui-components'
+import { DittoVideoPlayer } from '@laix/ditto-ui-components'
 
 interface Props {
   open: boolean
