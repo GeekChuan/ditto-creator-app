@@ -13,6 +13,8 @@ import CourseDetailPage from '../pages/CourseDetailPage'
 import LearnerAdminPage from '../pages/LearnerAdminPage'
 import LessonJsonDesignPage from '../pages/LessonJsonDesignPage'
 import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudioPage'
+import BenefitsPage from '../pages/BenefitsPage'
+import ImageCreativePage from '../pages/ImageCreativePage'
 import ProtectedRoute from '../auth/ProtectedRoute'
 
 export default function AppRouter() {
@@ -26,7 +28,9 @@ export default function AppRouter() {
           <Route path="assets" element={<AssetsPage />} />
           <Route path="courses" element={<CoursesPage />} />
           <Route path="courses/:courseId" element={<CourseDetailPage />} />
+          <Route path="benefits" element={<BenefitsPage />} />
           <Route path="lexicon" element={<LexiconPage />} />
+          <Route path="image-creative" element={<ImageCreativePage />} />
           <Route element={<ProtectedRoute requireSuperAdmin />}>
             <Route path="users" element={<UserManagementPage />} />
             <Route path="learner-admin" element={<LearnerAdminPage />} />

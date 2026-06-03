@@ -30,7 +30,6 @@ import {
 import {
   coursesApi,
   LESSON_TYPE_ATB_REACTION,
-  LESSON_TYPE_DUAL,
   LESSON_TYPE_MATERIAL_LIBRARY,
   type CourseOut,
   type LessonCreate,
@@ -58,10 +57,7 @@ function lessonTypeTag(lessonType: string) {
     return <Tag color="blue">素材自学</Tag>
   }
   if (lessonType === LESSON_TYPE_ATB_REACTION) {
-    return <Tag color="purple">ATB（旧）</Tag>
-  }
-  if (lessonType === LESSON_TYPE_DUAL) {
-    return <Tag>双版本</Tag>
+    return <Tag color="purple">ATB 互动</Tag>
   }
   return <Tag>{lessonType}</Tag>
 }
@@ -99,6 +95,7 @@ export default function CourseDetailPage() {
   const [lessonModalOpen, setLessonModalOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<LessonOut | null>(null)
   const [lessonForm] = Form.useForm<LessonCreate & LessonUpdate>()
+  const currentLessonType = Form.useWatch('lesson_type', lessonForm)
   const [assetOptions, setAssetOptions] = useState<{ label: string; value: string }[]>([])
   const [assetSearchLoading, setAssetSearchLoading] = useState(false)
 
@@ -254,7 +251,7 @@ export default function CourseDetailPage() {
     }
     setEditingLesson(null)
     lessonForm.resetFields()
-    lessonForm.setFieldsValue({ lesson_type: LESSON_TYPE_DUAL })
+    lessonForm.setFieldsValue({ lesson_type: LESSON_TYPE_MATERIAL_LIBRARY })
     setLessonModalOpen(true)
   }
 
@@ -263,7 +260,7 @@ export default function CourseDetailPage() {
     lessonForm.setFieldsValue({
       title: row.title,
       description: row.description ?? undefined,
-      lesson_type: LESSON_TYPE_DUAL,
+      lesson_type: row.lesson_type,
       video_asset_id: row.video_asset_id ?? undefined,
     })
     if (row.video_asset_id) {
@@ -281,7 +278,7 @@ export default function CourseDetailPage() {
     if (!selectedMilestoneId) return
     try {
       const values = await lessonForm.validateFields()
-      const payload = { ...values, lesson_type: LESSON_TYPE_DUAL } as LessonCreate & LessonUpdate
+      const payload = { ...values } as LessonCreate & LessonUpdate
       if (editingLesson) {
         await coursesApi.updateLesson(editingLesson.id, payload as LessonUpdate)
         message.success('已更新课节')
@@ -349,6 +346,10 @@ export default function CourseDetailPage() {
   }
 
   const rebuildLesson = async (row: LessonOut) => {
+    if (row.lesson_type !== LESSON_TYPE_MATERIAL_LIBRARY) {
+      message.warning('仅素材自学课支持刷新 Ditto')
+      return
+    }
     if (!row.video_asset_id) {
       message.warning('请先绑定自学素材后再刷新 Ditto')
       return
@@ -362,10 +363,8 @@ export default function CourseDetailPage() {
     }
   }
 
-  const hasSelfStudy = (row: LessonOut) =>
-    row.has_self_study ?? (row.video_asset_id != null && row.ditto_payload != null)
-  const hasAtb = (row: LessonOut) =>
-    row.has_atb ?? (row.atb_ditto_payload != null && Object.keys(row.atb_ditto_payload).length > 0)
+  const hasSelfStudy = (row: LessonOut) => row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY
+  const hasAtb = (row: LessonOut) => row.lesson_type === LESSON_TYPE_ATB_REACTION
 
   if (!courseId) {
     return null
@@ -524,99 +523,105 @@ export default function CourseDetailPage() {
                       </Paragraph>
                       <Space size={[4, 4]} wrap style={{ marginBottom: 12 }}>
                         {lessonTypeTag(row.lesson_type)}
-                        {hasSelfStudy(row) ? <Tag color="green">自学已就绪</Tag> : <Tag>自学未配置</Tag>}
-                        {hasAtb(row) ? <Tag color="magenta">ATB 已配置</Tag> : <Tag>ATB 未配置</Tag>}
+                        {hasSelfStudy(row) ? <Tag color="green">素材课</Tag> : null}
+                        {hasAtb(row) ? <Tag color="magenta">ATB课</Tag> : null}
                       </Space>
 
-                      <Divider orientation="left" plain style={{ margin: '8px 0' }}>
-                        自学版
-                      </Divider>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <Text type="secondary">
-                          素材：{' '}
-                          {row.video_asset_id ? (
-                            <Text copyable={{ text: row.video_asset_id }}>{row.video_asset_id.slice(0, 10)}…</Text>
-                          ) : (
-                            '未绑定（在「编辑元数据」中选择）'
-                          )}
-                        </Text>
-                        <Space wrap onClick={(e) => e.stopPropagation()}>
-                          <Button size="small" disabled={!row.video_asset_id} onClick={() => void rebuildLesson(row)}>
-                            刷新 Ditto 快照
-                          </Button>
-                        </Space>
-                        {row.ditto_payload ? (
-                          <Collapse
-                            size="small"
-                            items={[
-                              {
-                                key: 'self',
-                                label: '自学 ditto_payload 预览',
-                                children: (
-                                  <pre
-                                    style={{
-                                      margin: 0,
-                                      maxHeight: 280,
-                                      overflow: 'auto',
-                                      fontSize: 12,
-                                      background: '#0d1117',
-                                      color: '#e6edf3',
-                                      padding: 12,
-                                      borderRadius: 6,
-                                    }}
-                                  >
-                                    {JSON.stringify(row.ditto_payload, null, 2)}
-                                  </pre>
-                                ),
-                              },
-                            ]}
-                          />
-                        ) : (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            暂无自学快照（绑定素材并保存或点「刷新」）
-                          </Text>
-                        )}
-                      </Space>
-
-                      <Divider orientation="left" plain style={{ margin: '16px 0 8px' }}>
-                        ATB 版
-                      </Divider>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
-                        <Button size="small" type="primary" icon={<FileTextOutlined />} onClick={() => openAtbJsonEditor(row)}>
-                          脚本 JSON
-                        </Button>
-                        {hasAtb(row) ? (
-                          <Collapse
-                            size="small"
-                            items={[
-                              {
-                                key: 'atb',
-                                label: 'ATB 脚本预览',
-                                children: (
-                                  <pre
-                                    style={{
-                                      margin: 0,
-                                      maxHeight: 280,
-                                      overflow: 'auto',
-                                      fontSize: 12,
-                                      background: '#0d1117',
-                                      color: '#e6edf3',
-                                      padding: 12,
-                                      borderRadius: 6,
-                                    }}
-                                  >
-                                    {JSON.stringify(row.atb_ditto_payload ?? {}, null, 2)}
-                                  </pre>
-                                ),
-                              },
-                            ]}
-                          />
-                        ) : (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            尚未保存 ATB 脚本
-                          </Text>
-                        )}
-                      </Space>
+                      {row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY ? (
+                        <>
+                          <Divider orientation="left" plain style={{ margin: '8px 0' }}>
+                            素材自学配置
+                          </Divider>
+                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                            <Text type="secondary">
+                              素材：{' '}
+                              {row.video_asset_id ? (
+                                <Text copyable={{ text: row.video_asset_id }}>{row.video_asset_id.slice(0, 10)}…</Text>
+                              ) : (
+                                '未绑定（在「编辑元数据」中选择）'
+                              )}
+                            </Text>
+                            <Space wrap onClick={(e) => e.stopPropagation()}>
+                              <Button size="small" disabled={!row.video_asset_id} onClick={() => void rebuildLesson(row)}>
+                                刷新 Ditto 快照
+                              </Button>
+                            </Space>
+                            {row.ditto_payload ? (
+                              <Collapse
+                                size="small"
+                                items={[
+                                  {
+                                    key: 'self',
+                                    label: '自学 ditto_payload 预览',
+                                    children: (
+                                      <pre
+                                        style={{
+                                          margin: 0,
+                                          maxHeight: 280,
+                                          overflow: 'auto',
+                                          fontSize: 12,
+                                          background: '#0d1117',
+                                          color: '#e6edf3',
+                                          padding: 12,
+                                          borderRadius: 6,
+                                        }}
+                                      >
+                                        {JSON.stringify(row.ditto_payload, null, 2)}
+                                      </pre>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            ) : (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                暂无自学快照（绑定素材并保存或点「刷新」）
+                              </Text>
+                            )}
+                          </Space>
+                        </>
+                      ) : (
+                        <>
+                          <Divider orientation="left" plain style={{ margin: '16px 0 8px' }}>
+                            ATB 脚本配置
+                          </Divider>
+                          <Space direction="vertical" size="small" style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
+                            <Button size="small" type="primary" icon={<FileTextOutlined />} onClick={() => openAtbJsonEditor(row)}>
+                              脚本 JSON
+                            </Button>
+                            {hasAtb(row) ? (
+                              <Collapse
+                                size="small"
+                                items={[
+                                  {
+                                    key: 'atb',
+                                    label: 'ATB 脚本预览',
+                                    children: (
+                                      <pre
+                                        style={{
+                                          margin: 0,
+                                          maxHeight: 280,
+                                          overflow: 'auto',
+                                          fontSize: 12,
+                                          background: '#0d1117',
+                                          color: '#e6edf3',
+                                          padding: 12,
+                                          borderRadius: 6,
+                                        }}
+                                      >
+                                        {JSON.stringify(row.atb_ditto_payload ?? {}, null, 2)}
+                                      </pre>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            ) : (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                尚未保存 ATB 脚本
+                              </Text>
+                            )}
+                          </Space>
+                        </>
+                      )}
                     </Card>
                   ))}
                 </Space>
@@ -652,8 +657,18 @@ export default function CourseDetailPage() {
         destroyOnClose
       >
         <Form form={lessonForm} layout="vertical" style={{ marginTop: 8 }}>
-          <Form.Item name="lesson_type" hidden initialValue={LESSON_TYPE_DUAL}>
-            <Input />
+          <Form.Item
+            name="lesson_type"
+            label="课节类型"
+            initialValue={LESSON_TYPE_MATERIAL_LIBRARY}
+            rules={[{ required: true, message: '请选择课节类型' }]}
+          >
+            <Select
+              options={[
+                { label: '素材自学课', value: LESSON_TYPE_MATERIAL_LIBRARY },
+                { label: 'ATB 互动课', value: LESSON_TYPE_ATB_REACTION },
+              ]}
+            />
           </Form.Item>
           <Form.Item
             name="title"
@@ -690,21 +705,40 @@ export default function CourseDetailPage() {
           >
             <Input.TextArea rows={2} maxLength={400} showCount placeholder="可选，最多两行" />
           </Form.Item>
-          <Form.Item
-            name="video_asset_id"
-            label="自学素材（可选）"
-            extra="绑定后保存会自动生成自学 ditto 快照；可随时在卡片上点「刷新 Ditto」更新"
-          >
-            <Select
-              allowClear
-              showSearch
-              filterOption={false}
-              loading={assetSearchLoading}
-              options={assetOptions}
-              placeholder="搜索素材或留空"
-              onSearch={(k) => void searchAssets(k)}
-            />
-          </Form.Item>
+          {currentLessonType === LESSON_TYPE_MATERIAL_LIBRARY ? (
+            <Form.Item
+              name="video_asset_id"
+              label="自学素材"
+              rules={[{ required: true, message: '素材自学课必须绑定素材' }]}
+              extra="绑定后保存会自动生成自学 ditto 快照；可随时在卡片上点「刷新 Ditto」更新"
+            >
+              <Select
+                allowClear
+                showSearch
+                filterOption={false}
+                loading={assetSearchLoading}
+                options={assetOptions}
+                placeholder="搜索素材"
+                onSearch={(k) => void searchAssets(k)}
+              />
+            </Form.Item>
+          ) : currentLessonType === LESSON_TYPE_ATB_REACTION ? (
+            <Form.Item
+              name="video_asset_id"
+              label="ATB 回放视频（可选）"
+              extra="建议绑定，学习端将优先使用该素材生成稳定播放链接；未绑定时将回退到脚本 metadata.video_url"
+            >
+              <Select
+                allowClear
+                showSearch
+                filterOption={false}
+                loading={assetSearchLoading}
+                options={assetOptions}
+                placeholder="搜索素材或留空"
+                onSearch={(k) => void searchAssets(k)}
+              />
+            </Form.Item>
+          ) : null}
         </Form>
       </Modal>
 

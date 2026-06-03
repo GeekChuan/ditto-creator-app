@@ -45,14 +45,14 @@ export interface MilestoneUpdate {
 
 export const LESSON_TYPE_MATERIAL_LIBRARY = 'material_library'
 export const LESSON_TYPE_ATB_REACTION = 'atb_reaction'
-export const LESSON_TYPE_DUAL = 'dual'
+export type LessonType = typeof LESSON_TYPE_MATERIAL_LIBRARY | typeof LESSON_TYPE_ATB_REACTION
 
 export interface LessonOut {
   id: string
   milestone_id: string
   title: string
   description: string | null
-  lesson_type: string
+  lesson_type: LessonType
   video_asset_id: string | null
   ditto_payload: Record<string, unknown> | null
   atb_ditto_payload?: Record<string, unknown> | null
@@ -66,7 +66,7 @@ export interface LessonOut {
 export interface LessonCreate {
   title: string
   description?: string | null
-  lesson_type?: string
+  lesson_type?: LessonType
   video_asset_id?: string | null
   position?: number | null
 }
@@ -74,50 +74,50 @@ export interface LessonCreate {
 export interface LessonUpdate {
   title?: string
   description?: string | null
-  lesson_type?: string | null
+  lesson_type?: LessonType | null
   video_asset_id?: string | null
   position?: number | null
 }
 
 export const coursesApi = {
-  listCourses: (): Promise<CourseOut[]> => http.get('/api/v1/courses'),
+  listCourses: (): Promise<CourseOut[]> => http.get('/courses'),
 
-  createCourse: (body: CourseCreate): Promise<CourseOut> => http.post('/api/v1/courses', body),
+  createCourse: (body: CourseCreate): Promise<CourseOut> => http.post('/courses', body),
 
-  getCourse: (courseId: string): Promise<CourseOut> => http.get(`/api/v1/courses/${courseId}`),
+  getCourse: (courseId: string): Promise<CourseOut> => http.get(`/courses/${courseId}`),
 
   updateCourse: (courseId: string, body: CourseUpdate): Promise<CourseOut> =>
-    http.patch(`/api/v1/courses/${courseId}`, body),
+    http.patch(`/courses/${courseId}`, body),
 
-  deleteCourse: (courseId: string): Promise<void> => http.delete(`/api/v1/courses/${courseId}`),
+  deleteCourse: (courseId: string): Promise<void> => http.delete(`/courses/${courseId}`),
 
   listMilestones: (courseId: string): Promise<MilestoneOut[]> =>
-    http.get(`/api/v1/courses/${courseId}/milestones`),
+    http.get(`/courses/${courseId}/milestones`),
 
   createMilestone: (courseId: string, body: MilestoneCreate): Promise<MilestoneOut> =>
-    http.post(`/api/v1/courses/${courseId}/milestones`, body),
+    http.post(`/courses/${courseId}/milestones`, body),
 
   updateMilestone: (milestoneId: string, body: MilestoneUpdate): Promise<MilestoneOut> =>
-    http.patch(`/api/v1/milestones/${milestoneId}`, body),
+    http.patch(`/milestones/${milestoneId}`, body),
 
-  deleteMilestone: (milestoneId: string): Promise<void> => http.delete(`/api/v1/milestones/${milestoneId}`),
+  deleteMilestone: (milestoneId: string): Promise<void> => http.delete(`/milestones/${milestoneId}`),
 
   listLessons: (milestoneId: string): Promise<LessonOut[]> =>
-    http.get(`/api/v1/milestones/${milestoneId}/lessons`),
+    http.get(`/milestones/${milestoneId}/lessons`),
 
   createLesson: (milestoneId: string, body: LessonCreate): Promise<LessonOut> =>
-    http.post(`/api/v1/milestones/${milestoneId}/lessons`, body),
+    http.post(`/milestones/${milestoneId}/lessons`, body),
 
-  getLesson: (lessonId: string): Promise<LessonOut> => http.get(`/api/v1/lessons/${lessonId}`),
+  getLesson: (lessonId: string): Promise<LessonOut> => http.get(`/lessons/${lessonId}`),
 
   updateLesson: (lessonId: string, body: LessonUpdate): Promise<LessonOut> =>
-    http.patch(`/api/v1/lessons/${lessonId}`, body),
+    http.patch(`/lessons/${lessonId}`, body),
 
   putLessonAtbDitto: (lessonId: string, document: Record<string, unknown>): Promise<LessonOut> =>
-    http.put(`/api/v1/lessons/${lessonId}/atb-ditto`, document),
+    http.put(`/lessons/${lessonId}/atb-ditto`, document),
 
-  deleteLesson: (lessonId: string): Promise<void> => http.delete(`/api/v1/lessons/${lessonId}`),
+  deleteLesson: (lessonId: string): Promise<void> => http.delete(`/lessons/${lessonId}`),
 
   rebuildLessonDitto: (lessonId: string): Promise<LessonOut> =>
-    http.post(`/api/v1/lessons/${lessonId}/rebuild-ditto-payload`),
+    http.post(`/lessons/${lessonId}/rebuild-ditto-payload`),
 }

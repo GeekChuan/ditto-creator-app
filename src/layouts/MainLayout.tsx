@@ -11,6 +11,8 @@ import {
   DeploymentUnitOutlined,
   CodeOutlined,
   RocketOutlined,
+  GiftOutlined,
+  PictureOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -27,7 +29,9 @@ export default function MainLayout() {
     { key: '/dashboard', icon: <DashboardOutlined />, label: '概览' },
     { key: '/assets', icon: <VideoCameraOutlined />, label: '素材库' },
     { key: '/courses', icon: <ReadOutlined />, label: '课程管理' },
+    { key: '/benefits', icon: <GiftOutlined />, label: '权益码运营' },
     { key: '/lexicon', icon: <BookOutlined />, label: '单词库' },
+    { key: '/image-creative', icon: <PictureOutlined />, label: '图片创意' },
     ...(user?.role === 'super_admin'
       ? [
           { key: '/tools', icon: <ExperimentOutlined />, label: '工具中心' },
