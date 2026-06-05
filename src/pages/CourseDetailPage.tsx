@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Button,
   Card,
@@ -8,6 +8,7 @@ import {
   Divider,
   Form,
   Input,
+  InputNumber,
   List,
   Modal,
   Row,
@@ -25,13 +26,20 @@ import {
   DeleteOutlined,
   EditOutlined,
   FileTextOutlined,
+  CopyOutlined,
+  PictureOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
+import {
+  buildHeroPromptAssistantMessage,
+  HERO_PROMPT_TEMPLATE_EN,
+} from '../constants/courseHeroPrompt'
 import {
   coursesApi,
   LESSON_TYPE_ATB_REACTION,
   LESSON_TYPE_MATERIAL_LIBRARY,
   type CourseOut,
+  type CourseUpdate,
   type LessonCreate,
   type LessonOut,
   type LessonUpdate,
@@ -40,6 +48,7 @@ import {
   type MilestoneUpdate,
 } from '../api/courses'
 import { assetsApi, type VideoAsset } from '../api/assets'
+import ImageOssUploadField from '../components/ImageOssUploadField'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -87,6 +96,8 @@ export default function CourseDetailPage() {
   const [lessons, setLessons] = useState<LessonOut[]>([])
   const [loadingCourse, setLoadingCourse] = useState(true)
   const [loadingLessons, setLoadingLessons] = useState(false)
+  const [savingCourseMeta, setSavingCourseMeta] = useState(false)
+  const [courseForm] = Form.useForm<CourseUpdate>()
 
   const [msModalOpen, setMsModalOpen] = useState(false)
   const [editingMs, setEditingMs] = useState<MilestoneOut | null>(null)
@@ -146,6 +157,17 @@ export default function CourseDetailPage() {
   useEffect(() => {
     void loadCourseTree()
   }, [loadCourseTree])
+
+  useEffect(() => {
+    if (course) {
+      courseForm.setFieldsValue({
+        title: course.title,
+        description: course.description ?? undefined,
+        sort_order: course.sort_order,
+        cover_image_url: course.cover_image_url ?? undefined,
+      })
+    }
+  }, [course, courseForm])
 
   useEffect(() => {
     void loadLessons()
@@ -255,6 +277,22 @@ export default function CourseDetailPage() {
     setLessonModalOpen(true)
   }
 
+  const saveCourseMeta = async () => {
+    if (!courseId) return
+    try {
+      const values = await courseForm.validateFields()
+      setSavingCourseMeta(true)
+      const updated = await coursesApi.updateCourse(courseId, values)
+      setCourse(updated)
+      message.success('已保存课程元数据')
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'errorFields' in e) return
+      message.error('保存失败')
+    } finally {
+      setSavingCourseMeta(false)
+    }
+  }
+
   const openEditLesson = (row: LessonOut) => {
     setEditingLesson(row)
     lessonForm.setFieldsValue({
@@ -262,6 +300,8 @@ export default function CourseDetailPage() {
       description: row.description ?? undefined,
       lesson_type: row.lesson_type,
       video_asset_id: row.video_asset_id ?? undefined,
+      cover_image_url: row.cover_image_url ?? undefined,
+      duration_minutes: row.duration_minutes ?? undefined,
     })
     if (row.video_asset_id) {
       setAssetOptions([
@@ -378,12 +418,78 @@ export default function CourseDetailPage() {
         </Button>
       </Space>
 
-      <Title level={4} style={{ marginTop: 0 }}>
-        {loadingCourse ? '加载中…' : course?.title ?? '课程'}
-      </Title>
-      {course?.description ? (
-        <Typography.Paragraph type="secondary">{course.description}</Typography.Paragraph>
-      ) : null}
+      <Card
+        title="课程元数据（Learner 详情页）"
+        style={{ marginBottom: 16 }}
+        loading={loadingCourse}
+        extra={
+          <Button type="primary" loading={savingCourseMeta} onClick={() => void saveCourseMeta()}>
+            保存
+          </Button>
+        }
+      >
+        <Form form={courseForm} layout="vertical">
+          <Row gutter={16}>
+            <Col xs={24} md={14}>
+              <Form.Item name="title" label="课程标题" rules={[{ required: true, message: '请输入标题' }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="description" label="课程副标题 / 描述">
+                <Input.TextArea rows={2} placeholder="Learner Hero 区副标题" />
+              </Form.Item>
+              <Form.Item name="sort_order" label="排序">
+                <Input type="number" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={10}>
+              <Form.Item
+                name="cover_image_url"
+                label="Hero 封面（优先于课节封面聚合）"
+                extra={
+                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                    <Text type="secondary">
+                      16:9 横图（推荐 1536×1024）；留空则使用课节封面。规范见{' '}
+                      <Text code>docs/course-hero-cover-design-spec.md</Text>
+                    </Text>
+                    <Space wrap>
+                      <Link to="/image-creative">
+                        <Button size="small" icon={<PictureOutlined />}>
+                          图片创意生图
+                        </Button>
+                      </Link>
+                      <Button
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                          const title = courseForm.getFieldValue('title') as string | undefined
+                          const desc = courseForm.getFieldValue('description') as string | undefined
+                          void navigator.clipboard.writeText(
+                            buildHeroPromptAssistantMessage(title ?? '', desc ?? ''),
+                          )
+                          message.success('已复制顾问话术，可在图片创意左侧对话粘贴')
+                        }}
+                      >
+                        复制顾问话术
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(HERO_PROMPT_TEMPLATE_EN)
+                          message.success('已复制英文 gpt-image 模板')
+                        }}
+                      >
+                        复制英文模板
+                      </Button>
+                    </Space>
+                  </Space>
+                }
+              >
+                <ImageOssUploadField placeholder="上传课程封面" />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Card>
 
       <Row gutter={16}>
         <Col xs={24} md={8}>
@@ -525,6 +631,8 @@ export default function CourseDetailPage() {
                         {lessonTypeTag(row.lesson_type)}
                         {hasSelfStudy(row) ? <Tag color="green">素材课</Tag> : null}
                         {hasAtb(row) ? <Tag color="magenta">ATB课</Tag> : null}
+                        {row.duration_minutes ? <Tag>{row.duration_minutes} 分钟</Tag> : null}
+                        {row.cover_image_url ? <Tag color="cyan">有封面</Tag> : null}
                       </Space>
 
                       {row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY ? (
@@ -739,6 +847,12 @@ export default function CourseDetailPage() {
               />
             </Form.Item>
           ) : null}
+          <Form.Item name="cover_image_url" label="课节封面（可选）" extra="无课程 Hero 封面时参与 Learner 聚合">
+            <ImageOssUploadField placeholder="上传课节封面" />
+          </Form.Item>
+          <Form.Item name="duration_minutes" label="时长（分钟）" extra="留空且已绑素材时，保存后服务端可从视频时长推算">
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="例如 15" />
+          </Form.Item>
         </Form>
       </Modal>
 

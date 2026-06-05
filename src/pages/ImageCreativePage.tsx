@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  Alert,
+  AutoComplete,
   Button,
   Card,
   Col,
@@ -24,15 +26,20 @@ import {
   type ImageCreativeMessageOut,
   type ImageCreativeSessionOut,
 } from '../api/imageCreative'
+import {
+  DEFAULT_IMAGE_SIZE,
+  HERO_PROMPT_TEMPLATE_EN,
+  IMAGE_SIZE_PRESETS,
+  normalizeImageSizeInput,
+} from '../constants/imageCreativeSizes'
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 
-const SIZE_OPTIONS = [
-  { value: '1024x1024', label: '1:1 (1024×1024)' },
-  { value: '1024x1536', label: '竖屏 (1024×1536)' },
-  { value: '1536x1024', label: '横屏 (1536×1024)' },
-]
+const SIZE_AUTOCOMPLETE_OPTIONS = IMAGE_SIZE_PRESETS.map((p) => ({
+  value: p.value,
+  label: p.label,
+}))
 
 function ChatBubble({ msg }: { msg: ImageCreativeMessageOut }) {
   const isUser = msg.role === 'user'
@@ -69,7 +76,7 @@ export default function ImageCreativePage() {
   const [generations, setGenerations] = useState<ImageCreativeGenerationOut[]>([])
   const [chatInput, setChatInput] = useState('')
   const [imagePrompt, setImagePrompt] = useState('')
-  const [size, setSize] = useState('1024x1536')
+  const [size, setSize] = useState(DEFAULT_IMAGE_SIZE)
   const [genMode, setGenMode] = useState<'generate' | 'edit'>('generate')
   const [referenceGeneration, setReferenceGeneration] = useState<ImageCreativeGenerationOut | null>(null)
   const [chatLoading, setChatLoading] = useState(false)
@@ -170,6 +177,23 @@ export default function ImageCreativePage() {
     message.success('已复制到剪贴板')
   }
 
+  const onSizeChange = (value: string) => {
+    const normalized = normalizeImageSizeInput(value)
+    if (normalized) {
+      setSize(normalized)
+    } else {
+      setSize(value)
+    }
+  }
+
+  const applyHeroTemplate = () => {
+    setSize(DEFAULT_IMAGE_SIZE)
+    setImagePrompt(HERO_PROMPT_TEMPLATE_EN)
+    setGenMode('generate')
+    setReferenceGeneration(null)
+    message.success('已填入课程 Hero 英文模板，请修改 {{scene_description}} 后生成')
+  }
+
   const onGenerate = async () => {
     const prompt = imagePrompt.trim()
     if (!prompt) {
@@ -180,12 +204,17 @@ export default function ImageCreativePage() {
       message.warning('改图模式请先引用一张已生成的图片')
       return
     }
+    const normalizedSize = normalizeImageSizeInput(size)
+    if (!normalizedSize) {
+      message.error('尺寸格式无效，请使用预设或输入 WxH（边长 512–2048），如 1920x1080')
+      return
+    }
     setGenLoading(true)
     try {
       const row = await imageCreativeApi.createGeneration({
         prompt,
         session_id: sessionId,
-        size,
+        size: normalizedSize,
         mode: genMode,
         reference_generation_id: genMode === 'edit' ? referenceGeneration?.id : undefined,
       })
@@ -237,6 +266,20 @@ export default function ImageCreativePage() {
           <Text type="secondary">左侧协作写提示词 · 右侧文生图 / 引用历史图改图</Text>
         </Space>
       </Space>
+
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="课程 Hero 主图"
+        description={
+          <span>
+            推荐尺寸 <Text code>1536x1024</Text>（16:9）。设计规范见 workspace{' '}
+            <Text code>docs/course-hero-cover-design-spec.md</Text>。可一键填入英文模板或自定义{' '}
+            <Text code>WxH</Text>（512–2048）。
+          </span>
+        }
+      />
 
       <Row gutter={16} style={{ minHeight: 'calc(100vh - 220px)' }}>
         <Col xs={24} lg={12}>
@@ -395,10 +438,27 @@ export default function ImageCreativePage() {
                   style={{ marginTop: 8 }}
                 />
               </div>
-              <Space wrap>
-                <Select value={size} onChange={setSize} options={SIZE_OPTIONS} style={{ width: 200 }} />
+              <Space wrap align="start" style={{ width: '100%' }}>
+                <div>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                    输出尺寸（预设或自定义 WxH）
+                  </Text>
+                  <AutoComplete
+                    value={size}
+                    options={SIZE_AUTOCOMPLETE_OPTIONS}
+                    style={{ width: 280 }}
+                    onChange={onSizeChange}
+                    onSelect={onSizeChange}
+                    placeholder="例如 1536x1024"
+                    filterOption={(input, option) =>
+                      (option?.label?.toString() ?? '').toLowerCase().includes(input.toLowerCase()) ||
+                      (option?.value?.toString() ?? '').includes(input.toLowerCase())
+                    }
+                  />
+                </div>
+                <Button onClick={applyHeroTemplate}>课程 Hero 模板</Button>
                 <Button icon={<CopyOutlined />} onClick={() => void onCopyPrompt()}>
-                  复制
+                  复制提示词
                 </Button>
                 <Button type="primary" loading={genLoading} onClick={() => void onGenerate()}>
                   {genMode === 'edit' ? '改图生成' : '生成图片'}

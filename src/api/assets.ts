@@ -44,6 +44,24 @@ export interface PresignResponse {
   public_url: string
 }
 
+export interface AssetUploadResponse {
+  public_url: string
+  object_key: string
+}
+
+/** 本地联调默认走后端转存，避免 OSS 桶未配 CORS 导致浏览器 PUT 失败 */
+function preferServerSideUpload(): boolean {
+  if (import.meta.env.VITE_OSS_DIRECT_UPLOAD === 'true') return false
+  if (import.meta.env.VITE_OSS_UPLOAD_PROXY === 'true') return true
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+  try {
+    const host = new URL(base).hostname
+    return host === 'localhost' || host === '127.0.0.1'
+  } catch {
+    return base.includes('localhost') || base.includes('127.0.0.1')
+  }
+}
+
 export interface PlaybackUrlRequest {
   file_url: string
   expires?: number
@@ -178,7 +196,6 @@ export const assetsApi = {
     await axios.put(uploadUrl, file, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': 'inline',
       },
       timeout: 0,
       onUploadProgress: (event) => {
@@ -187,6 +204,37 @@ export const assetsApi = {
         onProgress?.(percent)
       },
     })
+  },
+
+  uploadViaServer: async (
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<AssetUploadResponse> => {
+    const form = new FormData()
+    form.append('file', file)
+    return http.post('/api/v1/assets/upload', form, {
+      timeout: 0,
+      onUploadProgress: (event) => {
+        if (!event.total) return
+        const percent = Math.min(99, Math.round((event.loaded / event.total) * 100))
+        onProgress?.(percent)
+      },
+    })
+  },
+
+  /** 预签名直传 OSS，或经后端转存（本地默认后者，规避桶 CORS） */
+  uploadFile: async (
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<{ public_url: string }> => {
+    if (preferServerSideUpload()) {
+      return assetsApi.uploadViaServer(file, onProgress)
+    }
+    const ct = assetsApi.inferContentType(file.name, file.type)
+    const presign = await assetsApi.presign({ filename: file.name, content_type: ct })
+    onProgress?.(10)
+    await assetsApi.uploadToCos(presign.upload_url, file, ct, onProgress)
+    return { public_url: presign.public_url }
   },
 
   create: (body: VideoAssetCreate): Promise<VideoAsset> =>

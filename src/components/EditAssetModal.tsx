@@ -81,13 +81,11 @@ export default function EditAssetModal({ open, asset, onClose, onSuccess }: Prop
     setCover({ previewUrl: objectUrl, publicUrl: null, width: w || null, height: h || null, uploading: true, progress: 5 })
 
     try {
-      const ct = assetsApi.inferContentType(file.name, file.type)
-      const presign = await assetsApi.presign({ filename: file.name, content_type: ct })
       setCover((s) => ({ ...s, progress: 10 }))
-      await assetsApi.uploadToCos(presign.upload_url, file, ct, (pct) => {
+      const uploaded = await assetsApi.uploadFile(file, (pct) => {
         setCover((s) => ({ ...s, progress: Math.max(s.progress, pct) }))
       })
-      setCover((s) => ({ ...s, publicUrl: presign.public_url, uploading: false, progress: 100 }))
+      setCover((s) => ({ ...s, publicUrl: uploaded.public_url, uploading: false, progress: 100 }))
     } catch {
       message.error('封面上传失败，请重试')
       URL.revokeObjectURL(objectUrl)
