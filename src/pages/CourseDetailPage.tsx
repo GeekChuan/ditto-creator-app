@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Button,
@@ -49,6 +49,12 @@ import {
 } from '../api/courses'
 import { assetsApi, type VideoAsset } from '../api/assets'
 import ImageOssUploadField from '../components/ImageOssUploadField'
+import CourseThemeField from '../components/CourseThemeField'
+import CourseBrandingField from '../components/CourseBrandingField'
+import CourseHomePreviewFrame from '../components/CourseHomePreviewFrame'
+import { creatorProfileApi, type CreatorProfileOut } from '../api/creatorProfile'
+import { buildCoursePreviewDetail } from '../utils/buildCoursePreviewDetail'
+import { signCoursePreviewDetail } from '../utils/signCoursePreviewDetail'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -114,6 +120,9 @@ export default function CourseDetailPage() {
   const [atbJsonLesson, setAtbJsonLesson] = useState<LessonOut | null>(null)
   const [atbJsonText, setAtbJsonText] = useState('')
   const [atbJsonSaving, setAtbJsonSaving] = useState(false)
+  const [allPreviewLessons, setAllPreviewLessons] = useState<LessonOut[]>([])
+  const [creatorProfile, setCreatorProfile] = useState<CreatorProfileOut | null>(null)
+  const decorFormValues = Form.useWatch([], courseForm)
 
   const loadCourseTree = useCallback(async () => {
     if (!courseId) return
@@ -159,12 +168,73 @@ export default function CourseDetailPage() {
   }, [loadCourseTree])
 
   useEffect(() => {
+    void creatorProfileApi.getProfile().then(setCreatorProfile).catch(() => setCreatorProfile(null))
+  }, [])
+
+  useEffect(() => {
+    if (!milestones.length) {
+      setAllPreviewLessons([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const lists = await Promise.all(milestones.map((ms) => coursesApi.listLessons(ms.id)))
+        if (!cancelled) {
+          setAllPreviewLessons(lists.flat())
+        }
+      } catch {
+        if (!cancelled) setAllPreviewLessons([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [milestones, lessons])
+
+  const rawPreviewDetail = useMemo(() => {
+    if (!course) return null
+    const formValues = (decorFormValues ?? {}) as CourseUpdate
+    return buildCoursePreviewDetail({
+      course,
+      formValues,
+      milestones,
+      allLessons: allPreviewLessons,
+      creatorProfile,
+    })
+  }, [course, decorFormValues, milestones, allPreviewLessons, creatorProfile])
+
+  const [previewDetail, setPreviewDetail] = useState(rawPreviewDetail)
+  const previewSignGenRef = useRef(0)
+
+  useEffect(() => {
+    if (!rawPreviewDetail) {
+      setPreviewDetail(null)
+      return
+    }
+    const gen = ++previewSignGenRef.current
+    void signCoursePreviewDetail(rawPreviewDetail)
+      .then((signed) => {
+        if (previewSignGenRef.current === gen) {
+          setPreviewDetail(signed)
+        }
+      })
+      .catch(() => {
+        if (previewSignGenRef.current === gen) {
+          setPreviewDetail(rawPreviewDetail)
+        }
+      })
+  }, [rawPreviewDetail])
+
+  useEffect(() => {
     if (course) {
       courseForm.setFieldsValue({
         title: course.title,
         description: course.description ?? undefined,
         sort_order: course.sort_order,
         cover_image_url: course.cover_image_url ?? undefined,
+        theme_color: course.theme_color ?? undefined,
+        branding: course.branding ?? undefined,
       })
     }
   }, [course, courseForm])
@@ -419,18 +489,18 @@ export default function CourseDetailPage() {
       </Space>
 
       <Card
-        title="课程元数据（Learner 详情页）"
+        title="课程主页装修"
         style={{ marginBottom: 16 }}
         loading={loadingCourse}
         extra={
           <Button type="primary" loading={savingCourseMeta} onClick={() => void saveCourseMeta()}>
-            保存
+            保存装修
           </Button>
         }
       >
         <Form form={courseForm} layout="vertical">
-          <Row gutter={16}>
-            <Col xs={24} md={14}>
+          <Row gutter={[24, 24]}>
+            <Col xs={24} xl={14}>
               <Form.Item name="title" label="课程标题" rules={[{ required: true, message: '请输入标题' }]}>
                 <Input />
               </Form.Item>
@@ -440,8 +510,22 @@ export default function CourseDetailPage() {
               <Form.Item name="sort_order" label="排序">
                 <Input type="number" />
               </Form.Item>
+              <Form.Item
+                name="theme_color"
+                label="课程主题色"
+                extra="Learner 课程详情与课节 UI 主色（按钮、进度、高亮等）"
+              >
+                <CourseThemeField />
+              </Form.Item>
+              <Form.Item
+                name="branding"
+                label="视觉个性（纹理 / 图标）"
+                extra="页面背景暗纹 + 课节数/继续学习按钮共用图标"
+              >
+                <CourseBrandingField />
+              </Form.Item>
             </Col>
-            <Col xs={24} md={10}>
+            <Col xs={24} xl={10}>
               <Form.Item
                 name="cover_image_url"
                 label="Hero 封面（优先于课节封面聚合）"
@@ -486,6 +570,9 @@ export default function CourseDetailPage() {
               >
                 <ImageOssUploadField placeholder="上传课程封面" />
               </Form.Item>
+              <div style={{ marginTop: 24 }}>
+                <CourseHomePreviewFrame courseId={courseId} previewDetail={previewDetail} />
+              </div>
             </Col>
           </Row>
         </Form>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button, Image, Input, Progress, Space, Upload, message } from 'antd'
 import { LoadingOutlined, UploadOutlined } from '@ant-design/icons'
 import { assetsApi } from '../api/assets'
+import { useSignedMediaUrl } from '../hooks/useSignedMediaUrl'
 
 function readImageDimensions(objectUrl: string): Promise<{ w: number; h: number }> {
   return new Promise((resolve) => {
@@ -70,7 +71,8 @@ export default function ImageOssUploadField({
     return false
   }
 
-  const displayPreview = previewUrl || (value?.trim() ? value : null)
+  const signedValueUrl = useSignedMediaUrl(previewUrl ? null : value)
+  const displayPreview = previewUrl || signedValueUrl
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size={8}>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Form, Image, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
+import SignedImage from '../components/SignedImage'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined } from '@ant-design/icons'
 import { coursesApi, type CourseOut, type CourseCreate, type CourseUpdate } from '../api/courses'
@@ -93,7 +94,7 @@ export default function CoursesPage() {
       width: 72,
       render: (url: string | null) =>
         url ? (
-          <Image src={url} alt="" width={48} height={27} style={{ objectFit: 'cover', borderRadius: 4 }} />
+          <SignedImage src={url} alt="" width={48} height={27} style={{ objectFit: 'cover', borderRadius: 4 }} />
         ) : (
           <Text type="secondary">—</Text>
         ),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Card, Col, Form, Input, InputNumber, Row, Space, Typography, message } from 'antd'
 import ImageOssUploadField from '../components/ImageOssUploadField'
+import { useSignedMediaUrl } from '../hooks/useSignedMediaUrl'
 import {
   creatorProfileApi,
   type CreatorProfileOut,
@@ -20,6 +21,7 @@ function formatCountWan(value: number | null | undefined): string {
 
 function ProfilePreview({ values }: { values: CreatorProfileUpdate & { display_name?: string } }) {
   const name = values.display_name?.trim() || '主讲老师'
+  const avatarSrc = useSignedMediaUrl(values.avatar_url)
   return (
     <div
       style={{
@@ -33,9 +35,9 @@ function ProfilePreview({ values }: { values: CreatorProfileUpdate & { display_n
         Learner 课程详情 · 老师区预览
       </Text>
       <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-        {values.avatar_url ? (
+        {avatarSrc ? (
           <img
-            src={values.avatar_url}
+            src={avatarSrc}
             alt=""
             style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }}
           />

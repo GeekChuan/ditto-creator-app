@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Modal, Form, Input, message, Progress, Image } from 'antd'
 import { CameraOutlined, LoadingOutlined, EyeOutlined } from '@ant-design/icons'
 import { assetsApi, type VideoAsset } from '../api/assets'
+import { useSignedMediaUrl } from '../hooks/useSignedMediaUrl'
 
 const { TextArea } = Input
 
@@ -128,8 +129,11 @@ export default function EditAssetModal({ open, asset, onClose, onSuccess }: Prop
     }
   }
 
-  // 当前封面展示地址：优先本地预览，其次 access_url，再次 cover_url
-  const displayCover = cover.previewUrl ?? asset?.cover_access_url ?? asset?.cover_url ?? null
+  const signedPublicUrl = useSignedMediaUrl(cover.publicUrl)
+  const signedCoverUrl = useSignedMediaUrl(asset?.cover_url)
+  // 当前封面展示地址：优先本地预览，其次新上传签名 URL，再次 access_url，再次 cover_url 签名
+  const displayCover =
+    cover.previewUrl ?? signedPublicUrl ?? asset?.cover_access_url ?? signedCoverUrl ?? null
 
   return (
     <Modal
