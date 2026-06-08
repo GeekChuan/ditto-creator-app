@@ -1,5 +1,10 @@
 import http from './http'
 
+export interface ProfileStatItem {
+  label: string
+  value: string
+}
+
 export interface CreatorProfileOut {
   id: string
   slug: string
@@ -8,9 +13,8 @@ export interface CreatorProfileOut {
   avatar_url: string | null
   bio: string | null
   role_label: string
-  followers_count: number
-  positive_rate_percent: number | null
-  student_count: number
+  profile_stats: ProfileStatItem[]
+  social_proof_label: string | null
   social_proof_quote: string | null
   created_at: string
   updated_at: string
@@ -20,9 +24,9 @@ export interface CreatorProfileUpdate {
   display_name?: string
   avatar_url?: string | null
   bio?: string | null
-  followers_count?: number
-  positive_rate_percent?: number | null
-  student_count?: number
+  role_label?: string
+  profile_stats?: ProfileStatItem[]
+  social_proof_label?: string | null
   social_proof_quote?: string | null
 }
 

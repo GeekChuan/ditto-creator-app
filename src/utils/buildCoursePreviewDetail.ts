@@ -24,9 +24,8 @@ export type CourseDetailPreview = {
     avatar_url: string | null
     bio: string | null
     role_label: string
-    followers_count: number | null
-    positive_rate_percent: number | null
-    student_count: number | null
+    profile_stats: Array<{ label: string; value: string }>
+    social_proof_label: string | null
     social_proof_quote: string | null
   }
   current_milestone: {
@@ -150,9 +149,8 @@ export function buildCoursePreviewDetail(params: {
       avatar_url: creatorProfile?.avatar_url ?? null,
       bio: creatorProfile?.bio ?? null,
       role_label: creatorProfile?.role_label ?? '主讲老师',
-      followers_count: creatorProfile?.followers_count ?? null,
-      positive_rate_percent: creatorProfile?.positive_rate_percent ?? null,
-      student_count: creatorProfile?.student_count ?? null,
+      profile_stats: creatorProfile?.profile_stats ?? [],
+      social_proof_label: creatorProfile?.social_proof_label ?? null,
       social_proof_quote: creatorProfile?.social_proof_quote ?? null,
     },
     current_milestone: {
