@@ -1,5 +1,7 @@
 import http from './http'
 
+const API_V1 = '/api/v1'
+
 export interface CourseCollectionOut {
   id: string
   creator_id: string
@@ -41,19 +43,19 @@ export interface PaginatedBenefitCodes {
 }
 
 export const benefitsApi = {
-  listCollections: (): Promise<CourseCollectionOut[]> => http.get('/course-collections'),
+  listCollections: (): Promise<CourseCollectionOut[]> => http.get(`${API_V1}/course-collections`),
   createCollection: (body: { title: string; description?: string | null; course_ids: string[] }): Promise<CourseCollectionOut> =>
-    http.post('/course-collections', body),
-  listProducts: (): Promise<BenefitProductOut[]> => http.get('/benefit-products'),
+    http.post(`${API_V1}/course-collections`, body),
+  listProducts: (): Promise<BenefitProductOut[]> => http.get(`${API_V1}/benefit-products`),
   createProduct: (body: { title: string; course_collection_id: string; validity_days: number }): Promise<BenefitProductOut> =>
-    http.post('/benefit-products', body),
+    http.post(`${API_V1}/benefit-products`, body),
   batchGenerateCodes: (
     productId: string,
     body: { quantity: number; prefix: string; expires_at?: string | null },
-  ): Promise<BenefitCodeOut[]> => http.post(`/benefit-products/${productId}/codes:batch-generate`, body),
+  ): Promise<BenefitCodeOut[]> => http.post(`${API_V1}/benefit-products/${productId}/codes:batch-generate`, body),
   listCodes: (
     productId: string,
     params?: { page?: number; page_size?: number; status?: string },
-  ): Promise<PaginatedBenefitCodes> => http.get(`/benefit-products/${productId}/codes`, { params }),
-  revokeCode: (codeId: string): Promise<BenefitCodeOut> => http.post(`/benefit-codes/${codeId}/revoke`),
+  ): Promise<PaginatedBenefitCodes> => http.get(`${API_V1}/benefit-products/${productId}/codes`, { params }),
+  revokeCode: (codeId: string): Promise<BenefitCodeOut> => http.post(`${API_V1}/benefit-codes/${codeId}/revoke`),
 }
