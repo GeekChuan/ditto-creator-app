@@ -13,6 +13,7 @@ import UploadModal from '../components/UploadModal'
 import VideoPlayerModal from '../components/VideoPlayerModal'
 import EditAssetModal from '../components/EditAssetModal'
 import AddSubtitleModal from '../components/AddSubtitleModal'
+import AssetCoverImage from '../components/AssetCoverImage'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -55,7 +56,6 @@ function AssetCard({
   onAddSubtitle: (asset: VideoAsset) => void
   onViewSubtitle: (asset: VideoAsset) => void
 }) {
-  const [imgErr, setImgErr] = useState(false)
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -68,19 +68,11 @@ function AssetCard({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          {/* 封面 */}
-          {asset.cover_url && !imgErr ? (
-            <img
-              src={asset.cover_access_url || asset.cover_url}
-              alt={asset.title ?? ''}
-              onError={() => setImgErr(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 28 }}>
-              🎬
-            </div>
-          )}
+          <AssetCoverImage
+            coverAccessUrl={asset.cover_access_url}
+            coverUrl={asset.cover_url}
+            alt={asset.title ?? ''}
+          />
 
           {/* 时长 & 比例标签 */}
           <div style={{ position: 'absolute', bottom: 6, right: 8 }}>
@@ -199,23 +191,16 @@ function AssetRow({
   onPlay: (asset: VideoAsset) => void
   onEdit: (asset: VideoAsset) => void
 }) {
-  const [imgErr, setImgErr] = useState(false)
-
   return (
     <Card size="small" styles={{ body: { padding: '10px 14px' } }} style={{ marginBottom: 8 }}>
       <Row align="middle" wrap={false} style={{ gap: 12 }}>
         {/* 封面缩略图：固定尺寸，不参与 flex 伸缩 */}
         <div style={{ flexShrink: 0, width: 80, height: 48, background: '#111', borderRadius: 4, overflow: 'hidden' }}>
-          {asset.cover_url && !imgErr ? (
-            <img
-              src={asset.cover_access_url || asset.cover_url}
-              alt=""
-              onError={() => setImgErr(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555', fontSize: 20 }}>🎬</div>
-          )}
+          <AssetCoverImage
+            coverAccessUrl={asset.cover_access_url}
+            coverUrl={asset.cover_url}
+            style={{ fontSize: 20 }}
+          />
         </div>
 
         {/* 文本信息：flex 伸缩填充，最小宽度 0 防止溢出 */}

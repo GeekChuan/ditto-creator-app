@@ -1,4 +1,5 @@
 import http from './http'
+import type { CourseBranding } from '../constants/courseBranding'
 
 export interface CourseOut {
   id: string
@@ -6,6 +7,8 @@ export interface CourseOut {
   description: string | null
   sort_order: number
   cover_image_url: string | null
+  theme_color: string | null
+  branding: CourseBranding | null
   created_at: string
   updated_at: string
 }
@@ -15,6 +18,8 @@ export interface CourseCreate {
   description?: string | null
   sort_order?: number
   cover_image_url?: string | null
+  theme_color?: string | null
+  branding?: CourseBranding | null
 }
 
 export interface CourseUpdate {
@@ -22,6 +27,8 @@ export interface CourseUpdate {
   description?: string | null
   sort_order?: number
   cover_image_url?: string | null
+  theme_color?: string | null
+  branding?: CourseBranding | null
 }
 
 export interface MilestoneOut {

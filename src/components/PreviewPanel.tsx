@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button, Card, Input, Space, Typography, message } from 'antd'
+import type { SDUISchemaNode } from '@laix/ditto-core-engine'
+import { signSchemaMediaUrls } from '../utils/signSchemaMedia'
 
 const { Paragraph, Text } = Typography
 
@@ -44,7 +46,7 @@ export default function PreviewPanel() {
     return import.meta.env.VITE_LEARNER_PREVIEW_URL || DEFAULT_LEARNER_URL
   }, [])
 
-  const postSchema = useCallback(() => {
+  const postSchema = useCallback(async () => {
     const iframeWindow = iframeRef.current?.contentWindow
     if (!iframeWindow) {
       message.warning('预览窗口尚未就绪')
@@ -52,11 +54,12 @@ export default function PreviewPanel() {
     }
 
     try {
-      const schema = JSON.parse(schemaText)
+      const schema = JSON.parse(schemaText) as SDUISchemaNode
+      const signedSchema = await signSchemaMediaUrls(schema)
       iframeWindow.postMessage(
         {
           type: MESSAGE_TYPE,
-          payload: schema,
+          payload: signedSchema,
         },
         '*',
       )
