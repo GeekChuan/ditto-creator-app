@@ -1,5 +1,7 @@
 import http from './http'
 
+const API_V1 = '/api/v1'
+
 export interface ImageCreativeSessionOut {
   id: string
   creator_id: string
@@ -50,14 +52,14 @@ export function extractCopyablePrompt(assistantContent: string): string {
 }
 
 export const imageCreativeApi = {
-  listSessions: (): Promise<ImageCreativeSessionOut[]> => http.get('/image-creative/sessions'),
+  listSessions: (): Promise<ImageCreativeSessionOut[]> => http.get(`${API_V1}/image-creative/sessions`),
   createSession: (title?: string): Promise<ImageCreativeSessionOut> =>
-    http.post('/image-creative/sessions', { title: title || '新对话' }),
+    http.post(`${API_V1}/image-creative/sessions`, { title: title || '新对话' }),
   listMessages: (sessionId: string): Promise<ImageCreativeMessageOut[]> =>
-    http.get(`/image-creative/sessions/${sessionId}/messages`),
+    http.get(`${API_V1}/image-creative/sessions/${sessionId}/messages`),
   chat: (sessionId: string, content: string): Promise<ImageCreativeChatResponse> =>
-    http.post(`/image-creative/sessions/${sessionId}/chat`, { content }, { timeout: 180_000 }),
-  listGenerations: (): Promise<ImageCreativeGenerationOut[]> => http.get('/image-creative/generations'),
+    http.post(`${API_V1}/image-creative/sessions/${sessionId}/chat`, { content }, { timeout: 180_000 }),
+  listGenerations: (): Promise<ImageCreativeGenerationOut[]> => http.get(`${API_V1}/image-creative/generations`),
   createGeneration: (body: {
     prompt: string
     session_id?: string
@@ -65,5 +67,5 @@ export const imageCreativeApi = {
     mode?: 'generate' | 'edit'
     reference_generation_id?: string
   }): Promise<ImageCreativeGenerationOut> =>
-    http.post('/image-creative/generations', body, { timeout: 300_000 }),
+    http.post(`${API_V1}/image-creative/generations`, body, { timeout: 300_000 }),
 }
