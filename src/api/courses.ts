@@ -5,6 +5,7 @@ export interface CourseOut {
   title: string
   description: string | null
   sort_order: number
+  cover_image_url: string | null
   created_at: string
   updated_at: string
 }
@@ -13,12 +14,14 @@ export interface CourseCreate {
   title: string
   description?: string | null
   sort_order?: number
+  cover_image_url?: string | null
 }
 
 export interface CourseUpdate {
   title?: string
   description?: string | null
   sort_order?: number
+  cover_image_url?: string | null
 }
 
 export interface MilestoneOut {
@@ -56,6 +59,8 @@ export interface LessonOut {
   video_asset_id: string | null
   ditto_payload: Record<string, unknown> | null
   atb_ditto_payload?: Record<string, unknown> | null
+  cover_image_url: string | null
+  duration_minutes: number | null
   position: number
   created_at: string
   updated_at: string
@@ -68,6 +73,8 @@ export interface LessonCreate {
   description?: string | null
   lesson_type?: LessonType
   video_asset_id?: string | null
+  cover_image_url?: string | null
+  duration_minutes?: number | null
   position?: number | null
 }
 
@@ -76,6 +83,8 @@ export interface LessonUpdate {
   description?: string | null
   lesson_type?: LessonType | null
   video_asset_id?: string | null
+  cover_image_url?: string | null
+  duration_minutes?: number | null
   position?: number | null
 }
 

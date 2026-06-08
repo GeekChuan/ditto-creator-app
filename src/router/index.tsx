@@ -10,6 +10,7 @@ import LexiconPage from '../pages/LexiconPage'
 import AgentDetailPage from '../pages/AgentDetailPage'
 import CoursesPage from '../pages/CoursesPage'
 import CourseDetailPage from '../pages/CourseDetailPage'
+import CreatorProfilePage from '../pages/CreatorProfilePage'
 import LearnerAdminPage from '../pages/LearnerAdminPage'
 import LessonJsonDesignPage from '../pages/LessonJsonDesignPage'
 import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudioPage'
@@ -28,6 +29,7 @@ export default function AppRouter() {
           <Route path="assets" element={<AssetsPage />} />
           <Route path="courses" element={<CoursesPage />} />
           <Route path="courses/:courseId" element={<CourseDetailPage />} />
+          <Route path="creator-profile" element={<CreatorProfilePage />} />
           <Route path="benefits" element={<BenefitsPage />} />
           <Route path="lexicon" element={<LexiconPage />} />
           <Route path="image-creative" element={<ImageCreativePage />} />

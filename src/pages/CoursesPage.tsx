@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Form, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
+import { Button, Form, Image, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined } from '@ant-design/icons'
 import { coursesApi, type CourseOut, type CourseCreate, type CourseUpdate } from '../api/courses'
+import ImageOssUploadField from '../components/ImageOssUploadField'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
 export default function CoursesPage() {
   const navigate = useNavigate()
@@ -44,6 +45,7 @@ export default function CoursesPage() {
       title: row.title,
       description: row.description ?? undefined,
       sort_order: row.sort_order,
+      cover_image_url: row.cover_image_url ?? undefined,
     })
     setModalOpen(true)
   }
@@ -84,6 +86,18 @@ export default function CoursesPage() {
   }
 
   const columns: ColumnsType<CourseOut> = [
+    {
+      title: '封面',
+      dataIndex: 'cover_image_url',
+      key: 'cover',
+      width: 72,
+      render: (url: string | null) =>
+        url ? (
+          <Image src={url} alt="" width={48} height={27} style={{ objectFit: 'cover', borderRadius: 4 }} />
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
     { title: '标题', dataIndex: 'title', key: 'title' },
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 88 },
     {
@@ -148,6 +162,9 @@ export default function CoursesPage() {
           </Form.Item>
           <Form.Item name="sort_order" label="排序（越小越靠前）">
             <InputNumber style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="cover_image_url" label="Hero 封面（可选）">
+            <ImageOssUploadField placeholder="上传课程封面" />
           </Form.Item>
         </Form>
       </Modal>

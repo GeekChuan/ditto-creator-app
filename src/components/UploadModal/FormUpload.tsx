@@ -52,11 +52,11 @@ async function uploadFileToCos(
   setState: React.Dispatch<React.SetStateAction<UploadState>>,
 ): Promise<string> {
   setState((s) => ({ ...s, uploading: true, progress: 5 }))
-  const normalizedType = assetsApi.inferContentType(filename, contentType)
-  const presign = await assetsApi.presign({ filename, content_type: normalizedType })
+  const uploadFile = new File([file], filename, {
+    type: assetsApi.inferContentType(filename, contentType),
+  })
   setState((s) => ({ ...s, progress: 10 }))
-  const uploadFile = new File([file], filename, { type: normalizedType })
-  await assetsApi.uploadToCos(presign.upload_url, uploadFile, normalizedType, (percent) => {
+  const uploaded = await assetsApi.uploadFile(uploadFile, (percent) => {
     setState((s) => ({ ...s, progress: Math.max(s.progress, percent) }))
   })
   setState((s) => ({
@@ -64,9 +64,9 @@ async function uploadFileToCos(
     progress: 100,
     done: true,
     uploading: false,
-    publicUrl: presign.public_url,
+    publicUrl: uploaded.public_url,
   }))
-  return presign.public_url
+  return uploaded.public_url
 }
 
 async function extractVideoMetaAndCover(file: File): Promise<{

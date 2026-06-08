@@ -49,15 +49,13 @@ export default function ImageOssUploadField({
     setProgress(5)
     try {
       const { w, h } = await readImageDimensions(objectUrl)
-      const ct = assetsApi.inferContentType(file.name, file.type)
-      const presign = await assetsApi.presign({ filename: file.name, content_type: ct })
       setProgress(10)
-      await assetsApi.uploadToCos(presign.upload_url, file, ct, (pct) => {
+      const uploaded = await assetsApi.uploadFile(file, (pct) => {
         setProgress((p) => Math.max(p, pct))
       })
       setProgress(100)
-      onChange?.(presign.public_url)
-      onUploaded?.({ url: presign.public_url, width: w, height: h })
+      onChange?.(uploaded.public_url)
+      onUploaded?.({ url: uploaded.public_url, width: w, height: h })
       message.success('图片已上传至 OSS')
     } catch {
       message.error('图片上传失败，请重试')
