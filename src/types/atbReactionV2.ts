@@ -48,6 +48,12 @@ export interface TeacherAvatarComponent {
   source_id: string
 }
 
+export interface KolAvatarComponent {
+  type: 'kol_avatar'
+  /** 引用 src 中 type=image 的 KOL 头像资源 */
+  source_id: string
+}
+
 export interface SpeechComponent {
   type: 'speech'
   subtitles: SubtitleCue[]
@@ -81,6 +87,8 @@ export interface WhiteboardComponent {
 
 export interface VideoPlayComponent {
   type: 'video_play'
+  /** 引用 src 中 type=video 的资源 */
+  source_id: string
   start_ms: number
   end_ms: number
   playback_rate?: number
@@ -88,14 +96,35 @@ export interface VideoPlayComponent {
   autoplay?: boolean
 }
 
+export const DEFAULT_COUNTDOWN_SEC = 3
+
+export interface CountdownComponent {
+  type: 'countdown'
+  /** 倒计时秒数，默认 3；倒计时结束后才开始播放视频 */
+  duration_sec?: number
+}
+
+export const DEFAULT_PLAY_VIDEO_STATUS_TITLE = '视频播放中'
+
+export interface PlayVideoBriefComponent {
+  type: 'play_video_brief'
+  /** 状态标题，默认「视频播放中」 */
+  status_title?: string
+  /** 说明文案，如「正在播放视频0-31s，正常速度，请仔细听哦～」 */
+  description: string
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
+  | KolAvatarComponent
   | SpeechComponent
   | ButtonComponent
   | KnowledgeCardComponent
   | WhiteboardComponent
   | VideoPlayComponent
+  | CountdownComponent
+  | PlayVideoBriefComponent
 
 export type SceneComponentType = SceneComponent['type']
 

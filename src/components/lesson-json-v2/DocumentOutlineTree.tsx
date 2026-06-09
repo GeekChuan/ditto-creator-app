@@ -2,6 +2,7 @@ import { Tree } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import type { AtbReactionDocument } from '../../types/atbReactionV2'
 import type { SelectionPath } from '../../types/atbReactionV2Editor'
+import { isPlayVideoNode } from '../../types/atbReactionV2Editor'
 
 interface Props {
   doc: AtbReactionDocument
@@ -57,7 +58,7 @@ export default function DocumentOutlineTree({ doc, selection, onSelect }: Props)
         title: `#${a.id} ${a.type}`,
         children: a.nodes.map((n, nodeIndex) => ({
           key: `node-${activityIndex}-${nodeIndex}`,
-          title: `Node ${n.id}`,
+          title: isPlayVideoNode(n) ? `Node ${n.id} · playVideo` : `Node ${n.id}`,
           children: n.components.map((c, componentIndex) => ({
             key: `comp-${activityIndex}-${nodeIndex}-${componentIndex}`,
             title: c.type,

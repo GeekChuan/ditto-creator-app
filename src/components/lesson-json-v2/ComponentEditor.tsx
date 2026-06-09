@@ -163,7 +163,23 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
     case 'video_play':
       return (
         <Form layout="vertical" size="small">
-          <Form.Item label="start_ms" required>
+          <Form.Item label="source_id" required>
+            <SrcIdSelect
+              src={src}
+              filterType="video"
+              value={component.source_id}
+              onChange={(id) => onChange({ ...component, source_id: id })}
+              placeholder="选择视频资源"
+            />
+          </Form.Item>
+          <Form.Item
+            label="start_ms"
+            required
+            validateStatus={component.start_ms >= component.end_ms ? 'warning' : undefined}
+            help={
+              component.start_ms >= component.end_ms ? 'start_ms 须小于 end_ms' : undefined
+            }
+          >
             <InputNumber
               min={0}
               style={{ width: '100%' }}
@@ -205,6 +221,55 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
             <Switch
               checked={component.autoplay !== false}
               onChange={(v) => onChange({ ...component, autoplay: v })}
+            />
+          </Form.Item>
+        </Form>
+      )
+    case 'countdown':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item label="duration_sec" help="倒计时结束后才开始播放视频，默认 3 秒">
+            <InputNumber
+              min={0}
+              max={60}
+              step={1}
+              style={{ width: '100%' }}
+              value={component.duration_sec ?? 3}
+              onChange={(v) => onChange({ ...component, duration_sec: v ?? 3 })}
+            />
+          </Form.Item>
+        </Form>
+      )
+    case 'kol_avatar':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item label="source_id" required help="引用 src 中的 KOL 头像（type=image）">
+            <SrcIdSelect
+              src={src}
+              filterType="image"
+              value={component.source_id}
+              onChange={(id) => onChange({ ...component, source_id: id })}
+              placeholder="选择 KOL 头像"
+            />
+          </Form.Item>
+        </Form>
+      )
+    case 'play_video_brief':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item label="status_title" help="默认「视频播放中」">
+            <Input
+              value={component.status_title ?? ''}
+              placeholder="视频播放中"
+              onChange={(e) => onChange({ ...component, status_title: e.target.value })}
+            />
+          </Form.Item>
+          <Form.Item label="description" required>
+            <Input.TextArea
+              rows={3}
+              value={component.description}
+              placeholder="正在播放视频0-31s，正常速度，请仔细听哦～"
+              onChange={(e) => onChange({ ...component, description: e.target.value })}
             />
           </Form.Item>
         </Form>

@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { authApi, clearAuth, getStoredUser, setAuth } from '../api/auth'
+import { authApi, clearAuth, getRefreshToken, getStoredUser, setAuth } from '../api/auth'
 import type { UserInfo } from '../types/user'
 
 interface AuthContextValue {
   user: UserInfo | null
   loading: boolean
   login: (username: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   refreshMe: () => Promise<void>
 }
 
@@ -35,10 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     login: async (username: string, password: string) => {
       const res = await authApi.login({ username, password })
-      setAuth(res.access_token, res.user)
+      setAuth(res.access_token, res.refresh_token, res.user)
       setUser(res.user)
     },
-    logout: () => {
+    logout: async () => {
+      const refreshToken = getRefreshToken()
+      if (refreshToken) {
+        await authApi.logout(refreshToken).catch(() => undefined)
+      }
       clearAuth()
       setUser(null)
     },
@@ -55,4 +59,3 @@ export function useAuth() {
   }
   return ctx
 }
-

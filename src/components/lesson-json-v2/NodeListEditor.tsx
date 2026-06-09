@@ -5,9 +5,11 @@ import {
   COMPONENT_TYPES,
   createDefaultComponent,
   createDefaultNode,
+  createPlayVideoNode,
+  isPlayVideoNode,
   moveItem,
 } from '../../types/atbReactionV2Editor'
-import { isSubmergeSequenceActivity } from '../../types/atbReactionV2'
+import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import type { SelectionPath } from '../../types/atbReactionV2Editor'
 
 const { Text } = Typography
@@ -61,6 +63,17 @@ export default function NodeListEditor({
     })
   }
 
+  const addPlayVideoNode = () => {
+    const id = activity.nodes.length
+      ? Math.max(
+          ...activity.nodes.map((n) =>
+            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
+          ),
+        ) + 1
+      : 1
+    updateNodes([...activity.nodes, createPlayVideoNode(src, id)])
+  }
+
   const nodeColumns: ColumnsType<SceneNode> = [
     {
       title: 'id',
@@ -69,7 +82,10 @@ export default function NodeListEditor({
     },
     {
       title: 'components',
-      render: (_, node) => node.components.map((c) => c.type).join(', '),
+      render: (_, node) => {
+        const types = node.components.map((c) => c.type).join(', ')
+        return isPlayVideoNode(node) ? `playVideo · ${types}` : types
+      },
     },
     {
       title: '操作',
@@ -134,6 +150,11 @@ export default function NodeListEditor({
         <Button type="primary" size="small" onClick={addNode}>
           添加 Node
         </Button>
+        {isLectureWithPracticeActivity(activity) ? (
+          <Button size="small" onClick={addPlayVideoNode}>
+            添加 playVideo 节点
+          </Button>
+        ) : null}
       </Space>
       <Table
         size="small"

@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { clearAuth, getToken } from './authStorage'
+import { clearAuth, getRefreshToken, getToken, setAuth } from './authStorage'
+import type { UserInfo } from '../types/user'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -18,19 +19,76 @@ const http = axios.create({
   timeout: 15000,
 })
 
-http.interceptors.response.use(
-  (res) => res.data,
-  (err) => {
-    if (err.response?.status === 401) {
-      clearAuth()
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login'
-      }
-    }
-    console.error('[API Error]', err)
-    return Promise.reject(err)
-  },
-)
+const refreshHttp = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+})
+
+let isRefreshing = false
+let refreshPromise: Promise<string | null> | null = null
+let refreshTimer: ReturnType<typeof setTimeout> | null = null
+
+const REFRESH_BUFFER_MS = 5 * 60 * 1000
+
+function decodeJwtExp(token: string): number | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return null
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp === 'number' ? payload.exp : null
+  } catch {
+    return null
+  }
+}
+
+function stopAccessTokenRefresh() {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+function scheduleAccessTokenRefresh() {
+  stopAccessTokenRefresh()
+  const token = getToken()
+  if (!token) return
+
+  const exp = decodeJwtExp(token)
+  if (!exp) return
+
+  const refreshAt = exp * 1000 - REFRESH_BUFFER_MS
+  const delay = Math.max(refreshAt - Date.now(), 0)
+
+  refreshTimer = setTimeout(async () => {
+    await tryRefreshToken()
+    scheduleAccessTokenRefresh()
+  }, delay)
+}
+
+interface AuthTokenResponse {
+  access_token: string
+  refresh_token: string
+  user: UserInfo
+}
+
+const authRefreshPath = '/api/v1/auth/refresh'
+
+const tryRefreshToken = async (): Promise<string | null> => {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) return null
+  try {
+    const { data } = await refreshHttp.post<AuthTokenResponse>(authRefreshPath, {
+      refresh_token: refreshToken,
+    })
+    setAuth(data.access_token, data.refresh_token, data.user)
+    scheduleAccessTokenRefresh()
+    return data.access_token
+  } catch {
+    stopAccessTokenRefresh()
+    clearAuth()
+    return null
+  }
+}
 
 http.interceptors.request.use((config) => {
   const token = getToken()
@@ -43,5 +101,56 @@ http.interceptors.request.use((config) => {
   }
   return config
 })
+
+http.interceptors.response.use(
+  (res) => res.data,
+  async (error) => {
+    const originalRequest = error.config as { _retry?: boolean; headers?: Record<string, string>; url?: string }
+    const requestUrl = String(originalRequest?.url || '')
+    const isRefreshRequest = requestUrl.includes('/auth/refresh')
+    if (isRefreshRequest) {
+      stopAccessTokenRefresh()
+      clearAuth()
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+      return Promise.reject(error)
+    }
+    if (error.response?.status !== 401 || originalRequest?._retry) {
+      console.error('[API Error]', error)
+      if (error.response?.status === 401) {
+        stopAccessTokenRefresh()
+        clearAuth()
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
+        }
+      }
+      return Promise.reject(error)
+    }
+
+    originalRequest._retry = true
+    if (!isRefreshing) {
+      isRefreshing = true
+      refreshPromise = tryRefreshToken().finally(() => {
+        isRefreshing = false
+      })
+    }
+    const newToken = await refreshPromise
+    if (!newToken) {
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+      return Promise.reject(error)
+    }
+    if (originalRequest.headers) {
+      originalRequest.headers.Authorization = `Bearer ${newToken}`
+    }
+    return http(originalRequest)
+  },
+)
+
+if (getToken() && getRefreshToken()) {
+  scheduleAccessTokenRefresh()
+}
 
 export default http

@@ -41,9 +41,7 @@ export default function LessonJsonDesignV2Page() {
       return <LessonMetaForm doc={doc} onChange={patchDoc} />
     }
     if (step === 1) {
-      return (
-        <SrcAssetsTable doc={doc} onChangeSrc={(src) => patchDoc({ src })} />
-      )
+      return <SrcAssetsTable doc={doc} onChangeSrc={(src) => patchDoc({ src })} />
     }
     return (
       <ActivitiesPanel

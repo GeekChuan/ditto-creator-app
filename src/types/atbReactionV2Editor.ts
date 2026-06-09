@@ -10,7 +10,7 @@ import type {
   SubmergeSequenceActivity,
   VideoSubtitleTrack,
 } from './atbReactionV2'
-import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from './atbReactionV2'
+import { DEFAULT_COUNTDOWN_SEC, DEFAULT_PLAY_VIDEO_STATUS_TITLE, isLectureWithPracticeActivity, isSubmergeSequenceActivity } from './atbReactionV2'
 
 export const DRAFT_STORAGE_KEY = 'creator-lesson-json-design-v2-draft'
 
@@ -22,6 +22,9 @@ export const COMPONENT_TYPES = [
   'knowledge_card',
   'whiteboard',
   'video_play',
+  'countdown',
+  'kol_avatar',
+  'play_video_brief',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -71,6 +74,18 @@ export function defaultTeacherAvatarSourceId(src: AtbSrcAsset[]): string {
   return img?.id ?? ''
 }
 
+export function defaultVideoSourceId(src: AtbSrcAsset[]): string {
+  const video = src.find((s) => s.type === 'video')
+  return video?.id ?? ''
+}
+
+export function defaultKolAvatarSourceId(src: AtbSrcAsset[]): string {
+  const kol = src.find((s) => s.type === 'image' && /kol/i.test(s.description ?? ''))
+  if (kol) return kol.id
+  const images = src.filter((s) => s.type === 'image')
+  return images.length > 1 ? images[1]!.id : images[0]?.id ?? ''
+}
+
 export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsset[]): SceneComponent {
   switch (type) {
     case 'background_image':
@@ -86,7 +101,24 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
     case 'whiteboard':
       return { type: 'whiteboard', img_url: '', img_width: 0, img_height: 0 }
     case 'video_play':
-      return { type: 'video_play', start_ms: 0, end_ms: 0, playback_rate: 1, autoplay: true }
+      return {
+        type: 'video_play',
+        source_id: defaultVideoSourceId(src),
+        start_ms: 0,
+        end_ms: 0,
+        playback_rate: 1,
+        autoplay: true,
+      }
+    case 'countdown':
+      return { type: 'countdown', duration_sec: DEFAULT_COUNTDOWN_SEC }
+    case 'kol_avatar':
+      return { type: 'kol_avatar', source_id: defaultKolAvatarSourceId(src) }
+    case 'play_video_brief':
+      return {
+        type: 'play_video_brief',
+        status_title: DEFAULT_PLAY_VIDEO_STATUS_TITLE,
+        description: '正在播放视频，请仔细听哦～',
+      }
     default: {
       const _e: never = type
       return _e
@@ -110,6 +142,23 @@ export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsse
     components: [
       createDefaultComponent('teacher_avatar', src),
       createDefaultComponent('speech', src),
+    ],
+  }
+}
+
+export function isPlayVideoNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'video_play')
+}
+
+export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('video_play', src),
+      createDefaultComponent('kol_avatar', src),
+      createDefaultComponent('play_video_brief', src),
+      createDefaultComponent('countdown', src),
+      createDefaultComponent('whiteboard', src),
     ],
   }
 }
@@ -235,6 +284,13 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
         if (comp.type === 'teacher_avatar' && comp.source_id && !srcIds.has(comp.source_id)) {
           errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] source_id 未在 src 中找到`)
         }
+        if (comp.type === 'kol_avatar') {
+          if (!comp.source_id?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] kol_avatar 缺少 source_id`)
+          } else if (!srcIds.has(comp.source_id)) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] kol_avatar source_id 未在 src 中找到`)
+          }
+        }
         if (comp.type === 'background_image' && !comp.img_url?.trim()) {
           errors.push(`activities[${ai}].nodes[${ni}] background_image 缺少 img_url`)
         }
@@ -242,6 +298,35 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
           if (!comp.audio?.trim()) errors.push(`activities[${ai}].nodes[${ni}] speech 缺少 audio`)
           if (!comp.subtitles?.length) errors.push(`activities[${ai}].nodes[${ni}] speech 缺少 subtitles`)
         }
+        if (comp.type === 'video_play') {
+          if (!comp.source_id?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] video_play 缺少 source_id`)
+          } else if (!srcIds.has(comp.source_id)) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] video_play source_id 未在 src 中找到`)
+          } else {
+            const asset = doc.src.find((s) => s.id === comp.source_id)
+            if (asset && asset.type !== 'video') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] video_play source_id 须引用 type=video 的资源`)
+            }
+          }
+          if (comp.start_ms >= comp.end_ms) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] video_play start_ms 须小于 end_ms`)
+          }
+        }
+        if (comp.type === 'countdown') {
+          const dur = comp.duration_sec ?? DEFAULT_COUNTDOWN_SEC
+          if (dur < 0) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] countdown duration_sec 不能为负数`)
+          }
+        }
+        if (comp.type === 'play_video_brief') {
+          if (!comp.description?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] play_video_brief 缺少 description`)
+          }
+        }
+      }
+      if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
       }
     }
   }
