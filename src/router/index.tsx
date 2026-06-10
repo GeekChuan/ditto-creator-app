@@ -13,6 +13,7 @@ import CourseDetailPage from '../pages/CourseDetailPage'
 import CreatorProfilePage from '../pages/CreatorProfilePage'
 import LearnerAdminPage from '../pages/LearnerAdminPage'
 import LessonJsonDesignPage from '../pages/LessonJsonDesignPage'
+import LessonJsonDesignV2Page from '../pages/lesson-json-design-v2/LessonJsonDesignV2Page'
 import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudioPage'
 import BenefitsPage from '../pages/BenefitsPage'
 import ImageCreativePage from '../pages/ImageCreativePage'
@@ -37,6 +38,7 @@ export default function AppRouter() {
             <Route path="users" element={<UserManagementPage />} />
             <Route path="learner-admin" element={<LearnerAdminPage />} />
             <Route path="lesson-json-design" element={<LessonJsonDesignPage />} />
+            <Route path="lesson-json-design-v2" element={<LessonJsonDesignV2Page />} />
             <Route path="tools" element={<ToolsPage />} />
             <Route path="tools/:toolId" element={<ToolDetailPage />} />
             <Route path="agents/:agentId" element={<AgentDetailPage />} />

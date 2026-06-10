@@ -1,0 +1,203 @@
+{
+  "version": "0.0.2",
+  "lesson_title": "Purple 紫色",
+  "lesson_section": "1-1",
+  "default_subtitle_mode": "auto",
+  "src": [
+    {
+      "id": "7d4185c3-9b9a-4b33-9173-690b473e2598",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/d33a82c5-ff94-41e3-87d7-ba15bf2cae9e.jpeg",
+      "type": "image",
+      "description": "老师的头像"
+    },
+    {
+      "id": "7d4185c3-9b9a-4b33-9173-690b473e2599",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/a619c552-a223-4d61-aaf4-7e9b5e5e5dbc.mp4",
+      "type": "video",
+      "description": "课程视频",
+      "subtitles": {
+        "segments": [
+          {
+            "start_ms": 0,
+            "end_ms": 4200,
+            "text": "Today, I want to share my morning routine with you.",
+            "translation_zh": "今天，我想和你分享我的早晨日常。",
+            "highlights": ["share"]
+          },
+          {
+            "start_ms": 4200,
+            "end_ms": 8400,
+            "text": "Every morning starts with a cup of coffee.",
+            "translation_zh": "每个早晨都从一杯咖啡开始。",
+            "highlights": []
+          }
+        ]
+      }
+    }
+  ],
+  "activities": [
+    {
+      "id": 1,
+      "type": "submerge_sequence",
+      "common_layout": "single_image_text",
+      "description": "Eva课程——紫色Purple的开场环节，6张紫色的沉浸式图片+老师开场白",
+      "end_signal": "end_signal_scene_6_end_button_click",
+      "nodes": [
+        {
+          "id": 1,
+          "components": [
+            {
+              "type": "background_image",
+              "description": "压了字的背景图第一张",
+              "img_url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/e4a8d2a6-e141-4b97-8887-48c5cccad16f.png"
+            },
+            {
+              "type": "teacher_avatar",
+              "source_id": "7d4185c3-9b9a-4b33-9173-690b473e2598"
+            },
+            {
+              "type": "speech",
+              "subtitles": [
+                {
+                  "start_ms": 169,
+                  "end_ms": 3250,
+                  "text": "Hello my bestie, and welcome back to my channel!"
+                },
+                {
+                  "start_ms": 3259,
+                  "end_ms": 7210,
+                  "text": "Do colors really matter in cultures?"
+                },
+                {
+                  "start_ms": 7769,
+                  "end_ms": 11650,
+                  "text": "颜色，对于文化来说，有那么重要吗？"
+                },
+                {
+                  "start_ms": 11889,
+                  "end_ms": 17250,
+                  "text": "如果你也是 From China 这个频道的粉丝，相信你一定看过赵一娃的这一期"
+                },
+                {
+                  "start_ms": 17529,
+                  "end_ms": 20048,
+                  "text": "青色, 紫色, 赭石色."
+                },
+                {
+                  "start_ms": 20049,
+                  "end_ms": 22088,
+                  "text": "不同的国家，不同的时代"
+                },
+                {
+                  "start_ms": 22089,
+                  "end_ms": 24730,
+                  "text": "总有它情有独钟的一款颜色"
+                }
+              ],
+              "audio": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/8bf9542f-6ee3-45e7-95b5-cdba1b7477ef.mp3",
+              "audio_duration": 24.804
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "components": [
+            {
+              "type": "background_image",
+              "description": "压了字的背景图",
+              "img_url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/31975e23-801b-410e-8ea5-93a09100634e.png"
+            },
+            {
+              "type": "speech",
+              "subtitles": [
+                {"start_ms": 205, "end_ms": 2044, "text": "But among all these colors"},
+                {"start_ms": 2045, "end_ms": 5374, "text": "there is one that has the most dramatic story"},
+                {"start_ms": 5375, "end_ms": 7124, "text": "在所有颜色中"},
+                {"start_ms": 7125, "end_ms": 10494, "text": "有一种颜色的命运堪称“过山车”"},
+                {"start_ms": 10495, "end_ms": 12684, "text": "它在古罗马贵如白银"},
+                {"start_ms": 12685, "end_ms": 15484, "text": "连皇帝都立法禁止平民买卖"},
+                {"start_ms": 15485, "end_ms": 17084, "text": "但在中国先秦时期"},
+                {"start_ms": 17085, "end_ms": 19204, "text": "它却一度被孔子嫌弃”"},
+                {"start_ms": 12905, "end_ms": 21934, "text": "被打上“低贱、不纯正”的标签"}
+              ],
+              "audio": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/07ec119f-d85f-4179-adcd-148d3994a51b.mp3",
+              "audio_duration": 21.996
+            },
+            {
+              "type": "teacher_avatar",
+              "source_id": "7d4185c3-9b9a-4b33-9173-690b473e2598"
+            },
+            {
+              "type": "button",
+              "text": "开始学习",
+              "click_signal": "end_signal_scene_6_end_button_click"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "lecture_with_practice",
+      "description": "在老师的带领下，完成对视频第一小节的学习",
+      "layout": "react_teaching_with_practice",
+      "video_source_id": "7d4185c3-9b9a-4b33-9173-690b473e2599",
+      "nodes": [
+        {
+          "id": 1,
+          "components": [
+            {
+              "type": "teacher_avatar",
+              "source_id": "7d4185c3-9b9a-4b33-9173-690b473e2598"
+            },
+            {
+              "type": "speech",
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 3000,
+                  "text": "好了，Intro 结束，我们要正式进入硬核又过瘾的「拉片」环节啦！",
+                  "highlights": []
+                },
+                {
+                  "start_ms": 3000,
+                  "end_ms": 6000,
+                  "text": "这里的 share 是「分享」的意思，后面可以接人或事。",
+                  "highlights": ["share"],
+                  "practical_expression": {
+                    "en": "I want to share...",
+                    "zh": "我想分享..."
+                  }
+                },
+                {
+                  "start_ms": 6000,
+                  "end_ms": 9000,
+                  "text": "在上主菜之前，咱们先定个小规矩：接下来的课程我会把完整的视频拆解成几个小段落。",
+                  "highlights": []
+                }
+              ],
+              "audio": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/8bf9542f-6ee3-45e7-95b5-cdba1b7477ef.mp3",
+              "audio_duration": 9.0
+            },
+            {
+              "type": "knowledge_card",
+              "tag": "熟词生义",
+              "title": "share = 分享",
+              "content": "常见搭配",
+              "collocations": [
+                "share my experience 分享我的经验",
+                "share with you 和你分享"
+              ]
+            },
+            {
+              "type": "whiteboard",
+              "img_url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/432c39ad-784c-47e1-9da6-a89d360a9d6c.png",
+              "img_width": 1695,
+              "img_height": 928
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

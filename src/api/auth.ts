@@ -1,6 +1,6 @@
 import http from './http'
 import type { UserInfo, UserRole } from '../types/user'
-export { clearAuth, getStoredUser, getToken, setAuth } from './authStorage'
+export { clearAuth, getRefreshToken, getStoredUser, getToken, setAuth } from './authStorage'
 
 export interface LoginPayload {
   username: string
@@ -27,6 +27,7 @@ export interface UserListResponse {
 
 export interface LoginResponse {
   access_token: string
+  refresh_token: string
   token_type: string
   user: UserInfo
 }
@@ -35,6 +36,7 @@ export const authApi = {
   register: (body: RegisterPayload): Promise<UserInfo> => http.post('/api/v1/auth/register', body),
   login: (body: LoginPayload): Promise<LoginResponse> => http.post('/api/v1/auth/login', body),
   me: (): Promise<UserInfo> => http.get('/api/v1/auth/me'),
+  logout: (refresh_token: string): Promise<void> => http.post('/api/v1/auth/logout', { refresh_token }),
   listUsers: (params?: { page?: number; page_size?: number; keyword?: string }): Promise<UserListResponse> =>
     http.get('/api/v1/users', { params }),
   createUser: (body: CreateUserPayload): Promise<UserInfo> => http.post('/api/v1/users', body),
