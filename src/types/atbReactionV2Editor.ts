@@ -10,7 +10,15 @@ import type {
   SubmergeSequenceActivity,
   VideoSubtitleTrack,
 } from './atbReactionV2'
-import { DEFAULT_COUNTDOWN_SEC, DEFAULT_PLAY_VIDEO_STATUS_TITLE, isLectureWithPracticeActivity, isSubmergeSequenceActivity } from './atbReactionV2'
+import {
+  DEFAULT_COUNTDOWN_SEC,
+  DEFAULT_FOLLOW_READING_INSTRUCTION_HINT,
+  DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY,
+  DEFAULT_PLAY_VIDEO_STATUS_TITLE,
+  DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
+  isLectureWithPracticeActivity,
+  isSubmergeSequenceActivity,
+} from './atbReactionV2'
 
 export const DRAFT_STORAGE_KEY = 'creator-lesson-json-design-v2-draft'
 
@@ -25,6 +33,7 @@ export const COMPONENT_TYPES = [
   'countdown',
   'kol_avatar',
   'play_video_brief',
+  'follow_reading',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -119,6 +128,17 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         status_title: DEFAULT_PLAY_VIDEO_STATUS_TITLE,
         description: '正在播放视频，请仔细听哦～',
       }
+    case 'follow_reading':
+      return {
+        type: 'follow_reading',
+        instruction_primary: DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY,
+        instruction_hint: DEFAULT_FOLLOW_READING_INSTRUCTION_HINT,
+        text_en: '',
+        text_zh: '',
+        language: 'en_us',
+        reference_audio: '',
+        positive_feedback_audios: DEFAULT_POSITIVE_FEEDBACK_AUDIOS.map((item) => ({ ...item })),
+      }
     default: {
       const _e: never = type
       return _e
@@ -148,6 +168,20 @@ export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsse
 
 export function isPlayVideoNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'video_play')
+}
+
+export function isFollowReadingNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'follow_reading')
+}
+
+export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('follow_reading', src),
+    ],
+  }
 }
 
 export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
@@ -324,9 +358,20 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] play_video_brief 缺少 description`)
           }
         }
+        if (comp.type === 'follow_reading') {
+          if (!comp.text_en?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] follow_reading 缺少 text_en`)
+          }
+          if (!comp.reference_audio?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] follow_reading 缺少 reference_audio`)
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
+      }
+      if (isFollowReadingNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`activities[${ai}].nodes[${ni}] 跟读节点不应同时包含 speech 组件`)
       }
     }
   }

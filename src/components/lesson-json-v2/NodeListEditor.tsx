@@ -5,7 +5,9 @@ import {
   COMPONENT_TYPES,
   createDefaultComponent,
   createDefaultNode,
+  createFollowReadingNode,
   createPlayVideoNode,
+  isFollowReadingNode,
   isPlayVideoNode,
   moveItem,
 } from '../../types/atbReactionV2Editor'
@@ -74,6 +76,17 @@ export default function NodeListEditor({
     updateNodes([...activity.nodes, createPlayVideoNode(src, id)])
   }
 
+  const addFollowReadingNode = () => {
+    const id = activity.nodes.length
+      ? Math.max(
+          ...activity.nodes.map((n) =>
+            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
+          ),
+        ) + 1
+      : 1
+    updateNodes([...activity.nodes, createFollowReadingNode(src, id)])
+  }
+
   const nodeColumns: ColumnsType<SceneNode> = [
     {
       title: 'id',
@@ -84,7 +97,9 @@ export default function NodeListEditor({
       title: 'components',
       render: (_, node) => {
         const types = node.components.map((c) => c.type).join(', ')
-        return isPlayVideoNode(node) ? `playVideo · ${types}` : types
+        if (isPlayVideoNode(node)) return `playVideo · ${types}`
+        if (isFollowReadingNode(node)) return `followReading · ${types}`
+        return types
       },
     },
     {
@@ -151,9 +166,14 @@ export default function NodeListEditor({
           添加 Node
         </Button>
         {isLectureWithPracticeActivity(activity) ? (
-          <Button size="small" onClick={addPlayVideoNode}>
-            添加 playVideo 节点
-          </Button>
+          <>
+            <Button size="small" onClick={addPlayVideoNode}>
+              添加 playVideo 节点
+            </Button>
+            <Button size="small" onClick={addFollowReadingNode}>
+              添加跟读节点
+            </Button>
+          </>
         ) : null}
       </Space>
       <Table

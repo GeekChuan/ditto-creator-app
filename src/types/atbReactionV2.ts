@@ -106,6 +106,31 @@ export interface CountdownComponent {
 
 export const DEFAULT_PLAY_VIDEO_STATUS_TITLE = '视频播放中'
 
+export const DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY = '试试大声读出下面的句子'
+export const DEFAULT_FOLLOW_READING_INSTRUCTION_HINT = '可以先听一遍原音'
+
+export interface FollowReadingPositiveFeedbackAudio {
+  text_en: string
+  audio_url: string
+}
+
+export const DEFAULT_POSITIVE_FEEDBACK_AUDIOS: FollowReadingPositiveFeedbackAudio[] = [
+  { text_en: 'Great job! Your pronunciation sounds clear and natural.', audio_url: '' },
+  { text_en: 'Well done! Keep up the fantastic work.', audio_url: '' },
+  { text_en: 'Nice work! You should feel proud of how well you did.', audio_url: '' },
+]
+
+export interface FollowReadingComponent {
+  type: 'follow_reading'
+  instruction_primary?: string
+  instruction_hint?: string
+  text_en: string
+  text_zh?: string
+  language?: string
+  reference_audio: string
+  positive_feedback_audios?: FollowReadingPositiveFeedbackAudio[]
+}
+
 export interface PlayVideoBriefComponent {
   type: 'play_video_brief'
   /** 状态标题，默认「视频播放中」 */
@@ -125,6 +150,7 @@ export type SceneComponent =
   | VideoPlayComponent
   | CountdownComponent
   | PlayVideoBriefComponent
+  | FollowReadingComponent
 
 export type SceneComponentType = SceneComponent['type']
 

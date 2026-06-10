@@ -7,6 +7,7 @@ import type {
 import { isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import ImageOssUploadField from '../ImageOssUploadField'
 import SrcIdSelect from './SrcIdSelect'
+import FollowReadingComponentForm from './components/FollowReadingComponentForm'
 import SpeechComponentForm from './components/SpeechComponentForm'
 
 interface Props {
@@ -274,6 +275,8 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
           </Form.Item>
         </Form>
       )
+    case 'follow_reading':
+      return <FollowReadingComponentForm value={component} onChange={onChange} />
     default: {
       const _e: never = component
       return _e
