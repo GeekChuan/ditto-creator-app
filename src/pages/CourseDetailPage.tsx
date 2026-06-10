@@ -17,6 +17,7 @@ import {
   Spin,
   Tag,
   Typography,
+  Upload,
   message,
 } from 'antd'
 import {
@@ -42,6 +43,7 @@ import {
   type CourseUpdate,
   type LessonCreate,
   type LessonOut,
+  type LessonType,
   type LessonUpdate,
   type MilestoneCreate,
   type MilestoneOut,
@@ -55,8 +57,33 @@ import CourseHomePreviewFrame from '../components/CourseHomePreviewFrame'
 import { creatorProfileApi, type CreatorProfileOut } from '../api/creatorProfile'
 import { buildCoursePreviewDetail } from '../utils/buildCoursePreviewDetail'
 import { signCoursePreviewDetail } from '../utils/signCoursePreviewDetail'
+import {
+  createEmptyDocument,
+  stringifyDocument,
+  validateDocument,
+} from '../types/atbReactionV2Editor'
+import type { AtbReactionDocument } from '../types/atbReactionV2'
 
 const { Title, Text, Paragraph } = Typography
+
+/** 前端表单专用：映射到 DB lesson_type = atb_reaction */
+export const LESSON_TYPE_ATB_REACTION_V2 = 'atb_reaction_v2'
+
+type LessonFormType = LessonType | typeof LESSON_TYPE_ATB_REACTION_V2
+type LessonFormValues = Omit<LessonCreate & LessonUpdate, 'lesson_type'> & { lesson_type?: LessonFormType }
+
+function isAtbV2Document(doc: Record<string, unknown> | null | undefined): boolean {
+  if (!doc || typeof doc !== 'object') return false
+  return (
+    typeof doc.version === 'string' &&
+    Array.isArray(doc.src) &&
+    Array.isArray(doc.activities)
+  )
+}
+
+function atbV2EmptyTemplate(): string {
+  return stringifyDocument(createEmptyDocument())
+}
 
 function atbPayloadForEditor(row: LessonOut): Record<string, unknown> | null {
   const a = row.atb_ditto_payload
@@ -67,11 +94,14 @@ function atbPayloadForEditor(row: LessonOut): Record<string, unknown> | null {
   return null
 }
 
-function lessonTypeTag(lessonType: string) {
+function lessonTypeTag(lessonType: string, atbPayload?: Record<string, unknown> | null) {
   if (lessonType === LESSON_TYPE_MATERIAL_LIBRARY) {
     return <Tag color="blue">素材自学</Tag>
   }
   if (lessonType === LESSON_TYPE_ATB_REACTION) {
+    if (isAtbV2Document(atbPayload ?? null)) {
+      return <Tag color="purple">ATB V2</Tag>
+    }
     return <Tag color="purple">ATB 互动</Tag>
   }
   return <Tag>{lessonType}</Tag>
@@ -111,8 +141,10 @@ export default function CourseDetailPage() {
 
   const [lessonModalOpen, setLessonModalOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<LessonOut | null>(null)
-  const [lessonForm] = Form.useForm<LessonCreate & LessonUpdate>()
+  const [lessonForm] = Form.useForm<LessonFormValues>()
   const currentLessonType = Form.useWatch('lesson_type', lessonForm)
+  const isAtbLessonType =
+    currentLessonType === LESSON_TYPE_ATB_REACTION || currentLessonType === LESSON_TYPE_ATB_REACTION_V2
   const [assetOptions, setAssetOptions] = useState<{ label: string; value: string }[]>([])
   const [assetSearchLoading, setAssetSearchLoading] = useState(false)
 
@@ -365,10 +397,14 @@ export default function CourseDetailPage() {
 
   const openEditLesson = (row: LessonOut) => {
     setEditingLesson(row)
+    const atbPayload = atbPayloadForEditor(row)
     lessonForm.setFieldsValue({
       title: row.title,
       description: row.description ?? undefined,
-      lesson_type: row.lesson_type,
+      lesson_type:
+        row.lesson_type === LESSON_TYPE_ATB_REACTION && isAtbV2Document(atbPayload)
+          ? LESSON_TYPE_ATB_REACTION_V2
+          : row.lesson_type,
       video_asset_id: row.video_asset_id ?? undefined,
       cover_image_url: row.cover_image_url ?? undefined,
       duration_minutes: row.duration_minutes ?? undefined,
@@ -388,13 +424,21 @@ export default function CourseDetailPage() {
     if (!selectedMilestoneId) return
     try {
       const values = await lessonForm.validateFields()
-      const payload = { ...values } as LessonCreate & LessonUpdate
+      const rawType = values.lesson_type as string
+      const isV2Atb = rawType === LESSON_TYPE_ATB_REACTION_V2
+      const payload = {
+        ...values,
+        lesson_type: isV2Atb ? LESSON_TYPE_ATB_REACTION : rawType,
+      } as LessonCreate & LessonUpdate
       if (editingLesson) {
         await coursesApi.updateLesson(editingLesson.id, payload as LessonUpdate)
         message.success('已更新课节')
       } else {
-        await coursesApi.createLesson(selectedMilestoneId, payload as LessonCreate)
-        message.success('已创建课节')
+        const created = await coursesApi.createLesson(selectedMilestoneId, payload as LessonCreate)
+        if (isV2Atb) {
+          await coursesApi.putLessonAtbDitto(created.id, createEmptyDocument() as unknown as Record<string, unknown>)
+        }
+        message.success(isV2Atb ? '已创建 ATB V2 课节，可导入 JSON 脚本' : '已创建课节')
       }
       setLessonModalOpen(false)
       void loadLessons()
@@ -424,10 +468,26 @@ export default function CourseDetailPage() {
   const openAtbJsonEditor = (row: LessonOut) => {
     setAtbJsonLesson(row)
     const existing = atbPayloadForEditor(row)
-    setAtbJsonText(
-      existing ? JSON.stringify(existing, null, 2) : '{\n  "metadata": {},\n  "nodes": []\n}',
-    )
+    if (existing && isAtbV2Document(existing)) {
+      setAtbJsonText(JSON.stringify(existing, null, 2))
+    } else if (existing) {
+      setAtbJsonText(JSON.stringify(existing, null, 2))
+    } else if (row.lesson_type === LESSON_TYPE_ATB_REACTION) {
+      setAtbJsonText(atbV2EmptyTemplate())
+    } else {
+      setAtbJsonText('{\n  "metadata": {},\n  "nodes": []\n}')
+    }
     setAtbJsonModalOpen(true)
+  }
+
+  const handleAtbJsonFileImport = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : ''
+      if (text.trim()) setAtbJsonText(text)
+    }
+    reader.readAsText(file)
+    return false
   }
 
   const submitAtbJson = async () => {
@@ -438,6 +498,13 @@ export default function CourseDetailPage() {
     } catch {
       message.error('JSON 格式无效')
       return
+    }
+    if (isAtbV2Document(doc)) {
+      const errors = validateDocument(doc as unknown as AtbReactionDocument)
+      if (errors.length) {
+        message.error(`V2 脚本校验失败：${errors[0]}`)
+        return
+      }
     }
     setAtbJsonSaving(true)
     try {
@@ -715,9 +782,15 @@ export default function CourseDetailPage() {
                         {row.description?.trim() || '（无描述）'}
                       </Paragraph>
                       <Space size={[4, 4]} wrap style={{ marginBottom: 12 }}>
-                        {lessonTypeTag(row.lesson_type)}
+                        {lessonTypeTag(row.lesson_type, row.atb_ditto_payload ?? null)}
                         {hasSelfStudy(row) ? <Tag color="green">素材课</Tag> : null}
-                        {hasAtb(row) ? <Tag color="magenta">ATB课</Tag> : null}
+                        {hasAtb(row) ? (
+                          isAtbV2Document(row.atb_ditto_payload ?? null) ? (
+                            <Tag color="magenta">atbReactionLessonV2</Tag>
+                          ) : (
+                            <Tag color="magenta">ATB课</Tag>
+                          )
+                        ) : null}
                         {row.duration_minutes ? <Tag>{row.duration_minutes} 分钟</Tag> : null}
                         {row.cover_image_url ? <Tag color="cyan">有封面</Tag> : null}
                       </Space>
@@ -861,7 +934,8 @@ export default function CourseDetailPage() {
             <Select
               options={[
                 { label: '素材自学课', value: LESSON_TYPE_MATERIAL_LIBRARY },
-                { label: 'ATB 互动课', value: LESSON_TYPE_ATB_REACTION },
+                { label: 'ATB 互动课 (V1)', value: LESSON_TYPE_ATB_REACTION },
+                { label: 'ATB 互动课 V2 (atbReactionLessonV2)', value: LESSON_TYPE_ATB_REACTION_V2 },
               ]}
             />
           </Form.Item>
@@ -917,11 +991,11 @@ export default function CourseDetailPage() {
                 onSearch={(k) => void searchAssets(k)}
               />
             </Form.Item>
-          ) : currentLessonType === LESSON_TYPE_ATB_REACTION ? (
+          ) : isAtbLessonType ? (
             <Form.Item
               name="video_asset_id"
               label="ATB 回放视频（可选）"
-              extra="建议绑定，学习端将优先使用该素材生成稳定播放链接；未绑定时将回退到脚本 metadata.video_url"
+              extra="V2 课节视频资源通常在 JSON 的 src 中配置；此处绑定可用于 Learner 封面/时长等元数据"
             >
               <Select
                 allowClear
@@ -957,9 +1031,14 @@ export default function CourseDetailPage() {
         okText="保存到课节"
       >
         <Paragraph type="secondary" style={{ marginTop: 0 }}>
-          根级须含 <Text code>metadata</Text>（对象）与 <Text code>nodes</Text>（数组）。可与「课程 JSON 设计」页导出的
-          lesson.json 一致。
+          支持 V1（<Text code>metadata</Text> + <Text code>nodes</Text>）与 V2（<Text code>version</Text> +{' '}
+          <Text code>src</Text> + <Text code>activities</Text>，atbReactionLessonV2）。可粘贴 JSON 或从文件导入。
         </Paragraph>
+        <Space style={{ marginBottom: 8 }}>
+          <Upload accept=".json,application/json" showUploadList={false} beforeUpload={handleAtbJsonFileImport}>
+            <Button size="small">从文件导入 JSON</Button>
+          </Upload>
+        </Space>
         <Input.TextArea
           value={atbJsonText}
           onChange={(e) => setAtbJsonText(e.target.value)}
