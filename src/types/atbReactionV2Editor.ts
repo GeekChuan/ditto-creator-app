@@ -371,7 +371,8 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
       }
       if (isFollowReadingNode(node) && node.components.some((c) => c.type === 'speech')) {
-        errors.push(`activities[${ai}].nodes[${ni}] 跟读节点不应同时包含 speech 组件`)
+        // speech 会先播完再解锁跟读，属于支持的用法，降级为提示
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + follow_reading，speech 将先播，播完后跟读解锁`)
       }
     }
   }
