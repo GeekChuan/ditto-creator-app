@@ -1,9 +1,11 @@
 import http from './http'
 
+const API_V1 = '/api/v1'
+
 export async function signMediaUrls(urls: string[]): Promise<Record<string, string | null>> {
   const unique = [...new Set(urls.map((u) => u.trim()).filter(Boolean))]
   if (!unique.length) return {}
-  const res = (await http.post('/media/sign-urls', { urls: unique })) as {
+  const res = (await http.post(`${API_V1}/media/sign-urls`, { urls: unique })) as {
     signed_urls: Record<string, string | null>
   }
   return res.signed_urls ?? {}
