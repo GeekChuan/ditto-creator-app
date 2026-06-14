@@ -8,9 +8,11 @@ import {
   createFollowReadingNode,
   createPlayVideoNode,
   createSingleChoiceNode,
+  createVoiceQaSimpleNode,
   isFollowReadingNode,
   isPlayVideoNode,
   isSingleChoiceNode,
+  isVoiceQaSimpleNode,
   moveItem,
 } from '../../types/atbReactionV2Editor'
 import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from '../../types/atbReactionV2'
@@ -100,6 +102,17 @@ export default function NodeListEditor({
     updateNodes([...activity.nodes, createSingleChoiceNode(src, id)])
   }
 
+  const addVoiceQaSimpleNode = () => {
+    const id = activity.nodes.length
+      ? Math.max(
+          ...activity.nodes.map((n) =>
+            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
+          ),
+        ) + 1
+      : 1
+    updateNodes([...activity.nodes, createVoiceQaSimpleNode(src, id)])
+  }
+
   const nodeColumns: ColumnsType<SceneNode> = [
     {
       title: 'id',
@@ -113,6 +126,7 @@ export default function NodeListEditor({
         if (isPlayVideoNode(node)) return `playVideo · ${types}`
         if (isFollowReadingNode(node)) return `followReading · ${types}`
         if (isSingleChoiceNode(node)) return `singleChoice · ${types}`
+        if (isVoiceQaSimpleNode(node)) return `voiceQa · ${types}`
         return types
       },
     },
@@ -189,6 +203,9 @@ export default function NodeListEditor({
             </Button>
             <Button size="small" onClick={addSingleChoiceNode}>
               添加选择题节点
+            </Button>
+            <Button size="small" onClick={addVoiceQaSimpleNode}>
+              添加语音问答题节点
             </Button>
           </>
         ) : null}

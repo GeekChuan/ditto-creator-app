@@ -16,6 +16,8 @@ import {
   DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY,
   DEFAULT_PLAY_VIDEO_STATUS_TITLE,
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
+  DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+  DEFAULT_VOICE_QA_MAX_ATTEMPTS,
   isLectureWithPracticeActivity,
   isSubmergeSequenceActivity,
 } from './atbReactionV2'
@@ -35,6 +37,7 @@ export const COMPONENT_TYPES = [
   'play_video_brief',
   'follow_reading',
   'single_choice',
+  'voice_qa_simple',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -150,6 +153,21 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         incorrect_feedback_audio: '',
         incorrect_feedback_subtitles: [{ start_ms: 0, end_ms: 2000, text: '' }],
       }
+    case 'voice_qa_simple':
+      return {
+        type: 'voice_qa_simple',
+        instruction_primary: DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+        hint_markdown: '',
+        question_en: '',
+        question_zh: '',
+        teaching_objective: '',
+        rubric_lines: [],
+        standard_answer: '',
+        standard_answer_zh: '',
+        max_attempts: DEFAULT_VOICE_QA_MAX_ATTEMPTS,
+        asr_language: 'en-US',
+        tts_voice_id: 'ZxueliLLS',
+      }
     default: {
       const _e: never = type
       return _e
@@ -189,6 +207,10 @@ export function isSingleChoiceNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'single_choice')
 }
 
+export function isVoiceQaSimpleNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'voice_qa_simple')
+}
+
 export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
   return {
     id: nodeId,
@@ -206,6 +228,17 @@ export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): Scen
       createDefaultComponent('teacher_avatar', src),
       createDefaultComponent('speech', src),
       createDefaultComponent('single_choice', src),
+    ],
+  }
+}
+
+export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('voice_qa_simple', src),
     ],
   }
 }
@@ -430,6 +463,26 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             )
           }
         }
+        if (comp.type === 'voice_qa_simple') {
+          if (!comp.hint_markdown?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 hint_markdown`)
+          }
+          if (!comp.question_en?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 question_en`)
+          }
+          if (!comp.teaching_objective?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 teaching_objective`)
+          }
+          if (!comp.standard_answer?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 standard_answer`)
+          }
+          const maxAttempts = comp.max_attempts ?? DEFAULT_VOICE_QA_MAX_ATTEMPTS
+          if (maxAttempts < 1 || maxAttempts > 10) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple max_attempts 须在 1~10 之间`,
+            )
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
@@ -440,6 +493,9 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       }
       if (isSingleChoiceNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + single_choice，speech 将先播，播完后选择题解锁`)
+      }
+      if (isVoiceQaSimpleNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + voice_qa_simple，speech 将先播，播完后语音问答解锁`)
       }
     }
   }

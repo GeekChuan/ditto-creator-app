@@ -10,6 +10,7 @@ import SrcIdSelect from './SrcIdSelect'
 import FollowReadingComponentForm from './components/FollowReadingComponentForm'
 import SingleChoiceComponentForm from './components/SingleChoiceComponentForm'
 import SpeechComponentForm from './components/SpeechComponentForm'
+import VoiceQaSimpleComponentForm from './components/VoiceQaSimpleComponentForm'
 
 interface Props {
   component: SceneComponent
@@ -280,6 +281,8 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
       return <FollowReadingComponentForm value={component} onChange={onChange} />
     case 'single_choice':
       return <SingleChoiceComponentForm value={component} onChange={onChange} />
+    case 'voice_qa_simple':
+      return <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
     default: {
       const _e: never = component
       return _e

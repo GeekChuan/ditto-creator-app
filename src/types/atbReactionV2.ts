@@ -151,6 +151,29 @@ export interface SingleChoiceComponent {
   incorrect_feedback_subtitles: SubtitleCue[]
 }
 
+export const DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_VOICE_QA_MAX_ATTEMPTS = 2
+
+export interface VoiceQaSimpleComponent {
+  type: 'voice_qa_simple'
+  instruction_primary?: string
+  /** 白板 3~4 行 Markdown 提示 */
+  hint_markdown: string
+  question_en: string
+  question_zh?: string
+  /** 教学目标，供 LLM 判题与反馈参考 */
+  teaching_objective: string
+  rubric_lines?: string[]
+  standard_answer: string
+  standard_answer_zh?: string
+  /** 学生最大作答轮次，默认 2 */
+  max_attempts?: number
+  /** 火山 ASR 语言，默认 en-US */
+  asr_language?: string
+  /** 动态反馈 TTS 音色 */
+  tts_voice_id?: string
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
@@ -164,6 +187,7 @@ export type SceneComponent =
   | PlayVideoBriefComponent
   | FollowReadingComponent
   | SingleChoiceComponent
+  | VoiceQaSimpleComponent
 
 export type SceneComponentType = SceneComponent['type']
 
