@@ -139,6 +139,18 @@ export interface PlayVideoBriefComponent {
   description: string
 }
 
+export interface SingleChoiceComponent {
+  type: 'single_choice'
+  /** 选项文案列表 */
+  options: string[]
+  /** 正确答案在 options 中的下标 */
+  correct_option_index: number
+  correct_feedback_audio: string
+  correct_feedback_subtitles: SubtitleCue[]
+  incorrect_feedback_audio: string
+  incorrect_feedback_subtitles: SubtitleCue[]
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
@@ -151,6 +163,7 @@ export type SceneComponent =
   | CountdownComponent
   | PlayVideoBriefComponent
   | FollowReadingComponent
+  | SingleChoiceComponent
 
 export type SceneComponentType = SceneComponent['type']
 

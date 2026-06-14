@@ -34,6 +34,7 @@ export const COMPONENT_TYPES = [
   'kol_avatar',
   'play_video_brief',
   'follow_reading',
+  'single_choice',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -139,6 +140,16 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         reference_audio: '',
         positive_feedback_audios: DEFAULT_POSITIVE_FEEDBACK_AUDIOS.map((item) => ({ ...item })),
       }
+    case 'single_choice':
+      return {
+        type: 'single_choice',
+        options: ['', '', ''],
+        correct_option_index: 0,
+        correct_feedback_audio: '',
+        correct_feedback_subtitles: [{ start_ms: 0, end_ms: 2000, text: '' }],
+        incorrect_feedback_audio: '',
+        incorrect_feedback_subtitles: [{ start_ms: 0, end_ms: 2000, text: '' }],
+      }
     default: {
       const _e: never = type
       return _e
@@ -174,12 +185,27 @@ export function isFollowReadingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'follow_reading')
 }
 
+export function isSingleChoiceNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'single_choice')
+}
+
 export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
   return {
     id: nodeId,
     components: [
       createDefaultComponent('teacher_avatar', src),
       createDefaultComponent('follow_reading', src),
+    ],
+  }
+}
+
+export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('single_choice', src),
     ],
   }
 }
@@ -366,6 +392,44 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] follow_reading 缺少 reference_audio`)
           }
         }
+        if (comp.type === 'single_choice') {
+          const optionCount = comp.options?.length ?? 0
+          if (optionCount < 2) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] single_choice 至少需要 2 个选项`)
+          }
+          if (
+            comp.correct_option_index == null ||
+            comp.correct_option_index < 0 ||
+            comp.correct_option_index >= optionCount
+          ) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice correct_option_index 超出范围`,
+            )
+          }
+          if (comp.options.some((option) => !option?.trim())) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] single_choice 选项文案不能为空`)
+          }
+          if (!comp.correct_feedback_audio?.trim()) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 correct_feedback_audio`,
+            )
+          }
+          if (!comp.incorrect_feedback_audio?.trim()) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 incorrect_feedback_audio`,
+            )
+          }
+          if (!comp.correct_feedback_subtitles?.length) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 correct_feedback_subtitles`,
+            )
+          }
+          if (!comp.incorrect_feedback_subtitles?.length) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 incorrect_feedback_subtitles`,
+            )
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
@@ -373,6 +437,9 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       if (isFollowReadingNode(node) && node.components.some((c) => c.type === 'speech')) {
         // speech 会先播完再解锁跟读，属于支持的用法，降级为提示
         errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + follow_reading，speech 将先播，播完后跟读解锁`)
+      }
+      if (isSingleChoiceNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + single_choice，speech 将先播，播完后选择题解锁`)
       }
     }
   }

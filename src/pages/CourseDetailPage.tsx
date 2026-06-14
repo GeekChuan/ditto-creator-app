@@ -501,9 +501,14 @@ export default function CourseDetailPage() {
     }
     if (isAtbV2Document(doc)) {
       const errors = validateDocument(doc as unknown as AtbReactionDocument)
-      if (errors.length) {
-        message.error(`V2 脚本校验失败：${errors[0]}`)
+      const hardErrors = errors.filter((e) => !e.startsWith('[提示]'))
+      const warnings = errors.filter((e) => e.startsWith('[提示]'))
+      if (hardErrors.length) {
+        message.error(`V2 脚本校验失败：${hardErrors[0]}`)
         return
+      }
+      if (warnings.length) {
+        message.warning(`V2 脚本提示：${warnings[0]}`)
       }
     }
     setAtbJsonSaving(true)
