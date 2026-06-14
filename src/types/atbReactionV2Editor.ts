@@ -18,6 +18,8 @@ import {
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
   DEFAULT_VOICE_QA_MAX_ATTEMPTS,
+  DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+  DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
   isLectureWithPracticeActivity,
   isSubmergeSequenceActivity,
 } from './atbReactionV2'
@@ -38,6 +40,7 @@ export const COMPONENT_TYPES = [
   'follow_reading',
   'single_choice',
   'voice_qa_simple',
+  'guided_speaking',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -168,6 +171,18 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         asr_language: 'en-US',
         tts_voice_id: 'ZxueliLLS',
       }
+    case 'guided_speaking':
+      return {
+        type: 'guided_speaking',
+        instruction_primary: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+        task_description: '',
+        expression_goals: [''],
+        initial_hint_markdown: '',
+        teaching_objective: '',
+        max_rounds: DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
+        asr_language: 'en-US',
+        tts_voice_id: 'ZxueliLLS',
+      }
     default: {
       const _e: never = type
       return _e
@@ -211,6 +226,10 @@ export function isVoiceQaSimpleNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'voice_qa_simple')
 }
 
+export function isGuidedSpeakingNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'guided_speaking')
+}
+
 export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
   return {
     id: nodeId,
@@ -239,6 +258,17 @@ export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): Sce
       createDefaultComponent('teacher_avatar', src),
       createDefaultComponent('speech', src),
       createDefaultComponent('voice_qa_simple', src),
+    ],
+  }
+}
+
+export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('guided_speaking', src),
     ],
   }
 }
@@ -483,6 +513,26 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             )
           }
         }
+        if (comp.type === 'guided_speaking') {
+          if (!comp.task_description?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 缺少 task_description`)
+          }
+          const goals = (comp.expression_goals ?? []).filter((g) => g?.trim())
+          if (goals.length < 1) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 至少需要 1 条 expression_goals`,
+            )
+          }
+          if (!comp.teaching_objective?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 缺少 teaching_objective`)
+          }
+          const maxRounds = comp.max_rounds ?? DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS
+          if (maxRounds < 1 || maxRounds > 20) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking max_rounds 须在 1~20 之间`,
+            )
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
@@ -496,6 +546,12 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       }
       if (isVoiceQaSimpleNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + voice_qa_simple，speech 将先播，播完后语音问答解锁`)
+      }
+      if (isGuidedSpeakingNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + guided_speaking，speech 将先播，播完后引导口语解锁`)
+      }
+      if (isGuidedSpeakingNode(node) && isVoiceQaSimpleNode(node)) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点同时含 voice_qa_simple 与 guided_speaking，请只保留一种语音互动`)
       }
     }
   }

@@ -11,6 +11,7 @@ import FollowReadingComponentForm from './components/FollowReadingComponentForm'
 import SingleChoiceComponentForm from './components/SingleChoiceComponentForm'
 import SpeechComponentForm from './components/SpeechComponentForm'
 import VoiceQaSimpleComponentForm from './components/VoiceQaSimpleComponentForm'
+import GuidedSpeakingComponentForm from './components/GuidedSpeakingComponentForm'
 
 interface Props {
   component: SceneComponent
@@ -283,6 +284,8 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
       return <SingleChoiceComponentForm value={component} onChange={onChange} />
     case 'voice_qa_simple':
       return <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
+    case 'guided_speaking':
+      return <GuidedSpeakingComponentForm value={component} onChange={onChange} />
     default: {
       const _e: never = component
       return _e

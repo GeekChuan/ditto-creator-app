@@ -174,6 +174,21 @@ export interface VoiceQaSimpleComponent {
   tts_voice_id?: string
 }
 
+export const DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS = 8
+
+export interface GuidedSpeakingComponent {
+  type: 'guided_speaking'
+  instruction_primary?: string
+  task_description: string
+  expression_goals: string[]
+  initial_hint_markdown?: string
+  teaching_objective: string
+  max_rounds?: number
+  asr_language?: string
+  tts_voice_id?: string
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
@@ -188,6 +203,7 @@ export type SceneComponent =
   | FollowReadingComponent
   | SingleChoiceComponent
   | VoiceQaSimpleComponent
+  | GuidedSpeakingComponent
 
 export type SceneComponentType = SceneComponent['type']
 
