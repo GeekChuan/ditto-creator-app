@@ -38,6 +38,8 @@ export interface MilestoneOut {
   course_id: string
   title: string
   description: string | null
+  hero_image_url: string | null
+  hero_mask_image_url: string | null
   position: number
   created_at: string
   updated_at: string
@@ -46,12 +48,16 @@ export interface MilestoneOut {
 export interface MilestoneCreate {
   title: string
   description?: string | null
+  hero_image_url?: string | null
+  hero_mask_image_url?: string | null
   position?: number | null
 }
 
 export interface MilestoneUpdate {
   title?: string
   description?: string | null
+  hero_image_url?: string | null
+  hero_mask_image_url?: string | null
   position?: number | null
 }
 
