@@ -67,6 +67,12 @@ export interface ButtonComponent {
   click_signal: string
 }
 
+export interface MaterialFollowReadingAnchorComponent {
+  type: 'material_follow_reading_anchor'
+  /** 自学课跟读列表中的句子 index，0 表示第一句 */
+  id: number | string
+}
+
 export interface KnowledgeCardComponent {
   type: 'knowledge_card'
   tag?: string
@@ -195,6 +201,7 @@ export type SceneComponent =
   | KolAvatarComponent
   | SpeechComponent
   | ButtonComponent
+  | MaterialFollowReadingAnchorComponent
   | KnowledgeCardComponent
   | WhiteboardComponent
   | VideoPlayComponent
@@ -210,6 +217,7 @@ export type SceneComponentType = SceneComponent['type']
 export interface SceneNode {
   id: number | string
   components: SceneComponent[]
+  metadata?: Record<string, unknown>
 }
 
 export interface SubmergeSequenceActivity {
@@ -235,11 +243,18 @@ export type AtbActivity = SubmergeSequenceActivity | LectureWithPracticeActivity
 
 export type AtbActivityType = AtbActivity['type']
 
+/** 课节级元数据，供 AI 老师等功能读取 */
+export interface AtbLessonMetadata {
+  /** 举手提问等 AI 老师场景的系统提示词 */
+  ai_teacher_system_prompt?: string
+}
+
 export interface AtbReactionDocument {
   version: string
   lesson_title?: string
   lesson_section?: string
   default_subtitle_mode?: SubtitleMode
+  metadata?: AtbLessonMetadata
   src: AtbSrcAsset[]
   activities: AtbActivity[]
 }

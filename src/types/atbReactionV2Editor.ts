@@ -31,6 +31,7 @@ export const COMPONENT_TYPES = [
   'teacher_avatar',
   'speech',
   'button',
+  'material_follow_reading_anchor',
   'knowledge_card',
   'whiteboard',
   'video_play',
@@ -112,6 +113,8 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return { type: 'speech', subtitles: [], audio: '', audio_duration: 0 }
     case 'button':
       return { type: 'button', text: '', click_signal: '' }
+    case 'material_follow_reading_anchor':
+      return { type: 'material_follow_reading_anchor', id: 0 }
     case 'knowledge_card':
       return { type: 'knowledge_card', tag: '', title: '', content: '', collocations: [] }
     case 'whiteboard':

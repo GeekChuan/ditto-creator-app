@@ -89,6 +89,24 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
           </Form.Item>
         </Form>
       )
+    case 'material_follow_reading_anchor':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item
+            label="id"
+            help="自学课跟读列表中的句子 index，0 表示第一句；该组件不在学员端画面中展示。"
+          >
+            <InputNumber
+              min={0}
+              step={1}
+              precision={0}
+              style={{ width: '100%' }}
+              value={Number(component.id) || 0}
+              onChange={(v) => onChange({ ...component, id: v ?? 0 })}
+            />
+          </Form.Item>
+        </Form>
+      )
     case 'knowledge_card':
       return (
         <Form layout="vertical" size="small">
