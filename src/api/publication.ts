@@ -1,4 +1,4 @@
-import { http } from './http'
+import http from './http'
 
 export type PublishResult = {
   success: boolean
@@ -30,23 +30,23 @@ export type BatchCoursePublicationStatus = {
 }
 
 export const publicationApi = {
-  publishCourse(courseId: string) {
-    return http.post<PublishResult>(`/api/v1/courses/${courseId}/publish`)
+  publishCourse(courseId: string): Promise<PublishResult> {
+    return http.post(`/api/v1/courses/${courseId}/publish`)
   },
-  publishLesson(lessonId: string) {
-    return http.post<PublishResult>(`/api/v1/lessons/${lessonId}/publish`)
+  publishLesson(lessonId: string): Promise<PublishResult> {
+    return http.post(`/api/v1/lessons/${lessonId}/publish`)
   },
-  batchGetPublicationStatus(courseIds: string[]) {
-    return http.post<BatchCoursePublicationStatus>('/api/v1/publication-status/batch', {
+  batchGetPublicationStatus(courseIds: string[]): Promise<BatchCoursePublicationStatus> {
+    return http.post('/api/v1/publication-status/batch', {
       course_ids: courseIds,
     })
   },
-  getPublicationStatus(courseId: string, lessonIds?: string[]) {
+  getPublicationStatus(courseId: string, lessonIds?: string[]): Promise<CoursePublicationStatus> {
     const params =
       lessonIds && lessonIds.length > 0
         ? `?${lessonIds.map((id) => `lesson_ids=${encodeURIComponent(id)}`).join('&')}`
         : ''
-    return http.get<CoursePublicationStatus>(
+    return http.get(
       `/api/v1/courses/${courseId}/publication-status${params}`,
     )
   },
