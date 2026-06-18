@@ -28,6 +28,7 @@ import {
   EditOutlined,
   FileTextOutlined,
   CopyOutlined,
+  CloudUploadOutlined,
   PictureOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
@@ -35,6 +36,7 @@ import {
   buildHeroPromptAssistantMessage,
   HERO_PROMPT_TEMPLATE_EN,
 } from '../constants/courseHeroPrompt'
+import { publicationApi } from '../api/publication'
 import {
   coursesApi,
   LESSON_TYPE_ATB_REACTION,
@@ -154,7 +156,24 @@ export default function CourseDetailPage() {
   const [atbJsonSaving, setAtbJsonSaving] = useState(false)
   const [allPreviewLessons, setAllPreviewLessons] = useState<LessonOut[]>([])
   const [creatorProfile, setCreatorProfile] = useState<CreatorProfileOut | null>(null)
+  const [coursePublished, setCoursePublished] = useState(false)
+  const [lessonPublishedMap, setLessonPublishedMap] = useState<Record<string, boolean>>({})
+  const [publishingCourse, setPublishingCourse] = useState(false)
+  const [publishingLessonId, setPublishingLessonId] = useState<string | null>(null)
   const decorFormValues = Form.useWatch([], courseForm)
+
+  const refreshPublicationStatus = useCallback(async () => {
+    if (!courseId) return
+    try {
+      const status = await publicationApi.getPublicationStatus(courseId)
+      setCoursePublished(status.collection_published)
+      setLessonPublishedMap(
+        Object.fromEntries(status.lessons.map((lesson) => [lesson.lesson_id, lesson.is_published])),
+      )
+    } catch {
+      /* publication status optional until first publish */
+    }
+  }, [courseId])
 
   const loadCourseTree = useCallback(async () => {
     if (!courseId) return
@@ -197,7 +216,8 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     void loadCourseTree()
-  }, [loadCourseTree])
+    void refreshPublicationStatus()
+  }, [loadCourseTree, refreshPublicationStatus])
 
   useEffect(() => {
     void creatorProfileApi.getProfile().then(setCreatorProfile).catch(() => setCreatorProfile(null))
@@ -543,6 +563,34 @@ export default function CourseDetailPage() {
   const hasSelfStudy = (row: LessonOut) => row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY
   const hasAtb = (row: LessonOut) => row.lesson_type === LESSON_TYPE_ATB_REACTION
 
+  const publishCourse = async () => {
+    if (!courseId) return
+    setPublishingCourse(true)
+    try {
+      await publicationApi.publishCourse(courseId)
+      message.success('课程已上架')
+      setCoursePublished(true)
+      await refreshPublicationStatus()
+    } catch {
+      message.error('课程上架失败')
+    } finally {
+      setPublishingCourse(false)
+    }
+  }
+
+  const publishLesson = async (lessonId: string) => {
+    setPublishingLessonId(lessonId)
+    try {
+      await publicationApi.publishLesson(lessonId)
+      message.success('课节已上架')
+      setLessonPublishedMap((prev) => ({ ...prev, [lessonId]: true }))
+    } catch {
+      message.error('课节上架失败')
+    } finally {
+      setPublishingLessonId(null)
+    }
+  }
+
   if (!courseId) {
     return null
   }
@@ -552,6 +600,15 @@ export default function CourseDetailPage() {
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/courses')}>
           返回列表
+        </Button>
+        <Button
+          type="primary"
+          icon={<CloudUploadOutlined />}
+          loading={publishingCourse}
+          disabled={coursePublished}
+          onClick={() => void publishCourse()}
+        >
+          {coursePublished ? '课程已上架' : '上架课程'}
         </Button>
       </Space>
 
@@ -765,6 +822,16 @@ export default function CourseDetailPage() {
                       }
                       extra={
                         <Space size="small" wrap onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<CloudUploadOutlined />}
+                            disabled={!coursePublished || lessonPublishedMap[row.id]}
+                            loading={publishingLessonId === row.id}
+                            onClick={() => void publishLesson(row.id)}
+                          >
+                            {lessonPublishedMap[row.id] ? '已上架' : '上架'}
+                          </Button>
                           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEditLesson(row)}>
                             编辑元数据
                           </Button>

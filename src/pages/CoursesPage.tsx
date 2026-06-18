@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Form, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
 import SignedImage from '../components/SignedImage'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined, EditOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { coursesApi, type CourseOut, type CourseCreate, type CourseUpdate } from '../api/courses'
+import { publicationApi } from '../api/publication'
 import ImageOssUploadField from '../components/ImageOssUploadField'
 
 const { Title, Text } = Typography
@@ -13,6 +14,8 @@ export default function CoursesPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState<CourseOut[]>([])
+  const [publishedMap, setPublishedMap] = useState<Record<string, boolean>>({})
+  const [publishingId, setPublishingId] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<CourseOut | null>(null)
   const [form] = Form.useForm<CourseCreate & CourseUpdate>()
@@ -22,6 +25,16 @@ export default function CoursesPage() {
     try {
       const list = await coursesApi.listCourses()
       setCourses(list)
+      if (list.length > 0) {
+        const batch = await publicationApi.batchGetPublicationStatus(list.map((course) => course.id))
+        setPublishedMap(
+          Object.fromEntries(
+            batch.courses.map((item) => [item.course_id, item.collection_published]),
+          ),
+        )
+      } else {
+        setPublishedMap({})
+      }
     } catch {
       message.error('加载课程列表失败')
     } finally {
@@ -86,6 +99,19 @@ export default function CoursesPage() {
     })
   }
 
+  const publishCourse = async (row: CourseOut) => {
+    setPublishingId(row.id)
+    try {
+      await publicationApi.publishCourse(row.id)
+      message.success('课程已上架')
+      setPublishedMap((prev) => ({ ...prev, [row.id]: true }))
+    } catch {
+      message.error('上架失败')
+    } finally {
+      setPublishingId(null)
+    }
+  }
+
   const columns: ColumnsType<CourseOut> = [
     {
       title: '封面',
@@ -102,6 +128,13 @@ export default function CoursesPage() {
     { title: '标题', dataIndex: 'title', key: 'title' },
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 88 },
     {
+      title: '上架状态',
+      key: 'published',
+      width: 100,
+      render: (_, row) =>
+        publishedMap[row.id] ? <Text type="success">已上架</Text> : <Text type="secondary">未上架</Text>,
+    },
+    {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
@@ -111,11 +144,21 @@ export default function CoursesPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 220,
+      width: 300,
       render: (_, row) => (
         <Space>
           <Button type="link" size="small" onClick={() => navigate(`/courses/${row.id}`)}>
             管理
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<CloudUploadOutlined />}
+            disabled={publishedMap[row.id]}
+            loading={publishingId === row.id}
+            onClick={() => void publishCourse(row)}
+          >
+            上架
           </Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(row)}>
             编辑
