@@ -16,6 +16,10 @@ import {
   DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY,
   DEFAULT_PLAY_VIDEO_STATUS_TITLE,
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
+  DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+  DEFAULT_VOICE_QA_MAX_ATTEMPTS,
+  DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+  DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
   isLectureWithPracticeActivity,
   isSubmergeSequenceActivity,
 } from './atbReactionV2'
@@ -27,6 +31,7 @@ export const COMPONENT_TYPES = [
   'teacher_avatar',
   'speech',
   'button',
+  'material_follow_reading_anchor',
   'knowledge_card',
   'whiteboard',
   'video_play',
@@ -34,6 +39,9 @@ export const COMPONENT_TYPES = [
   'kol_avatar',
   'play_video_brief',
   'follow_reading',
+  'single_choice',
+  'voice_qa_simple',
+  'guided_speaking',
 ] as const satisfies readonly SceneComponentType[]
 
 export type EditorStep = 0 | 1 | 2
@@ -105,6 +113,8 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return { type: 'speech', subtitles: [], audio: '', audio_duration: 0 }
     case 'button':
       return { type: 'button', text: '', click_signal: '' }
+    case 'material_follow_reading_anchor':
+      return { type: 'material_follow_reading_anchor', id: 0 }
     case 'knowledge_card':
       return { type: 'knowledge_card', tag: '', title: '', content: '', collocations: [] }
     case 'whiteboard':
@@ -138,6 +148,43 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         language: 'en_us',
         reference_audio: '',
         positive_feedback_audios: DEFAULT_POSITIVE_FEEDBACK_AUDIOS.map((item) => ({ ...item })),
+      }
+    case 'single_choice':
+      return {
+        type: 'single_choice',
+        options: ['', '', ''],
+        correct_option_index: 0,
+        correct_feedback_audio: '',
+        correct_feedback_subtitles: [{ start_ms: 0, end_ms: 2000, text: '' }],
+        incorrect_feedback_audio: '',
+        incorrect_feedback_subtitles: [{ start_ms: 0, end_ms: 2000, text: '' }],
+      }
+    case 'voice_qa_simple':
+      return {
+        type: 'voice_qa_simple',
+        instruction_primary: DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+        hint_markdown: '',
+        question_en: '',
+        question_zh: '',
+        teaching_objective: '',
+        rubric_lines: [],
+        standard_answer: '',
+        standard_answer_zh: '',
+        max_attempts: DEFAULT_VOICE_QA_MAX_ATTEMPTS,
+        asr_language: 'en-US',
+        tts_voice_id: 'ZxueliLLS',
+      }
+    case 'guided_speaking':
+      return {
+        type: 'guided_speaking',
+        instruction_primary: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+        task_description: '',
+        expression_goals: [''],
+        initial_hint_markdown: '',
+        teaching_objective: '',
+        max_rounds: DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
+        asr_language: 'en-US',
+        tts_voice_id: 'ZxueliLLS',
       }
     default: {
       const _e: never = type
@@ -174,12 +221,57 @@ export function isFollowReadingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'follow_reading')
 }
 
+export function isSingleChoiceNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'single_choice')
+}
+
+export function isVoiceQaSimpleNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'voice_qa_simple')
+}
+
+export function isGuidedSpeakingNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'guided_speaking')
+}
+
 export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
   return {
     id: nodeId,
     components: [
       createDefaultComponent('teacher_avatar', src),
       createDefaultComponent('follow_reading', src),
+    ],
+  }
+}
+
+export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('single_choice', src),
+    ],
+  }
+}
+
+export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('voice_qa_simple', src),
+    ],
+  }
+}
+
+export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+  return {
+    id: nodeId,
+    components: [
+      createDefaultComponent('teacher_avatar', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('guided_speaking', src),
     ],
   }
 }
@@ -366,6 +458,84 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] follow_reading 缺少 reference_audio`)
           }
         }
+        if (comp.type === 'single_choice') {
+          const optionCount = comp.options?.length ?? 0
+          if (optionCount < 2) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] single_choice 至少需要 2 个选项`)
+          }
+          if (
+            comp.correct_option_index == null ||
+            comp.correct_option_index < 0 ||
+            comp.correct_option_index >= optionCount
+          ) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice correct_option_index 超出范围`,
+            )
+          }
+          if (comp.options.some((option) => !option?.trim())) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] single_choice 选项文案不能为空`)
+          }
+          if (!comp.correct_feedback_audio?.trim()) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 correct_feedback_audio`,
+            )
+          }
+          if (!comp.incorrect_feedback_audio?.trim()) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 incorrect_feedback_audio`,
+            )
+          }
+          if (!comp.correct_feedback_subtitles?.length) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 correct_feedback_subtitles`,
+            )
+          }
+          if (!comp.incorrect_feedback_subtitles?.length) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 incorrect_feedback_subtitles`,
+            )
+          }
+        }
+        if (comp.type === 'voice_qa_simple') {
+          if (!comp.hint_markdown?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 hint_markdown`)
+          }
+          if (!comp.question_en?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 question_en`)
+          }
+          if (!comp.teaching_objective?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 teaching_objective`)
+          }
+          if (!comp.standard_answer?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple 缺少 standard_answer`)
+          }
+          const maxAttempts = comp.max_attempts ?? DEFAULT_VOICE_QA_MAX_ATTEMPTS
+          if (maxAttempts < 1 || maxAttempts > 10) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] voice_qa_simple max_attempts 须在 1~10 之间`,
+            )
+          }
+        }
+        if (comp.type === 'guided_speaking') {
+          if (!comp.task_description?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 缺少 task_description`)
+          }
+          const goals = (comp.expression_goals ?? []).filter((g) => g?.trim())
+          if (goals.length < 1) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 至少需要 1 条 expression_goals`,
+            )
+          }
+          if (!comp.teaching_objective?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking 缺少 teaching_objective`)
+          }
+          const maxRounds = comp.max_rounds ?? DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS
+          if (maxRounds < 1 || maxRounds > 20) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] guided_speaking max_rounds 须在 1~20 之间`,
+            )
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
@@ -373,6 +543,18 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       if (isFollowReadingNode(node) && node.components.some((c) => c.type === 'speech')) {
         // speech 会先播完再解锁跟读，属于支持的用法，降级为提示
         errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + follow_reading，speech 将先播，播完后跟读解锁`)
+      }
+      if (isSingleChoiceNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + single_choice，speech 将先播，播完后选择题解锁`)
+      }
+      if (isVoiceQaSimpleNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + voice_qa_simple，speech 将先播，播完后语音问答解锁`)
+      }
+      if (isGuidedSpeakingNode(node) && node.components.some((c) => c.type === 'speech')) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + guided_speaking，speech 将先播，播完后引导口语解锁`)
+      }
+      if (isGuidedSpeakingNode(node) && isVoiceQaSimpleNode(node)) {
+        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点同时含 voice_qa_simple 与 guided_speaking，请只保留一种语音互动`)
       }
     }
   }

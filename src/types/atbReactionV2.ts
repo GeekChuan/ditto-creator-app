@@ -67,6 +67,12 @@ export interface ButtonComponent {
   click_signal: string
 }
 
+export interface MaterialFollowReadingAnchorComponent {
+  type: 'material_follow_reading_anchor'
+  /** 自学课跟读列表中的句子 index，0 表示第一句 */
+  id: number | string
+}
+
 export interface KnowledgeCardComponent {
   type: 'knowledge_card'
   tag?: string
@@ -139,24 +145,79 @@ export interface PlayVideoBriefComponent {
   description: string
 }
 
+export interface SingleChoiceComponent {
+  type: 'single_choice'
+  /** 选项文案列表 */
+  options: string[]
+  /** 正确答案在 options 中的下标 */
+  correct_option_index: number
+  correct_feedback_audio: string
+  correct_feedback_subtitles: SubtitleCue[]
+  incorrect_feedback_audio: string
+  incorrect_feedback_subtitles: SubtitleCue[]
+}
+
+export const DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_VOICE_QA_MAX_ATTEMPTS = 2
+
+export interface VoiceQaSimpleComponent {
+  type: 'voice_qa_simple'
+  instruction_primary?: string
+  /** 白板 3~4 行 Markdown 提示 */
+  hint_markdown: string
+  question_en: string
+  question_zh?: string
+  /** 教学目标，供 LLM 判题与反馈参考 */
+  teaching_objective: string
+  rubric_lines?: string[]
+  standard_answer: string
+  standard_answer_zh?: string
+  /** 学生最大作答轮次，默认 2 */
+  max_attempts?: number
+  /** 火山 ASR 语言，默认 en-US */
+  asr_language?: string
+  /** 动态反馈 TTS 音色 */
+  tts_voice_id?: string
+}
+
+export const DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS = 8
+
+export interface GuidedSpeakingComponent {
+  type: 'guided_speaking'
+  instruction_primary?: string
+  task_description: string
+  expression_goals: string[]
+  initial_hint_markdown?: string
+  teaching_objective: string
+  max_rounds?: number
+  asr_language?: string
+  tts_voice_id?: string
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
   | KolAvatarComponent
   | SpeechComponent
   | ButtonComponent
+  | MaterialFollowReadingAnchorComponent
   | KnowledgeCardComponent
   | WhiteboardComponent
   | VideoPlayComponent
   | CountdownComponent
   | PlayVideoBriefComponent
   | FollowReadingComponent
+  | SingleChoiceComponent
+  | VoiceQaSimpleComponent
+  | GuidedSpeakingComponent
 
 export type SceneComponentType = SceneComponent['type']
 
 export interface SceneNode {
   id: number | string
   components: SceneComponent[]
+  metadata?: Record<string, unknown>
 }
 
 export interface SubmergeSequenceActivity {
@@ -182,11 +243,18 @@ export type AtbActivity = SubmergeSequenceActivity | LectureWithPracticeActivity
 
 export type AtbActivityType = AtbActivity['type']
 
+/** 课节级元数据，供 AI 老师等功能读取 */
+export interface AtbLessonMetadata {
+  /** 举手提问等 AI 老师场景的系统提示词 */
+  ai_teacher_system_prompt?: string
+}
+
 export interface AtbReactionDocument {
   version: string
   lesson_title?: string
   lesson_section?: string
   default_subtitle_mode?: SubtitleMode
+  metadata?: AtbLessonMetadata
   src: AtbSrcAsset[]
   activities: AtbActivity[]
 }

@@ -8,7 +8,10 @@ import { isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import ImageOssUploadField from '../ImageOssUploadField'
 import SrcIdSelect from './SrcIdSelect'
 import FollowReadingComponentForm from './components/FollowReadingComponentForm'
+import SingleChoiceComponentForm from './components/SingleChoiceComponentForm'
 import SpeechComponentForm from './components/SpeechComponentForm'
+import VoiceQaSimpleComponentForm from './components/VoiceQaSimpleComponentForm'
+import GuidedSpeakingComponentForm from './components/GuidedSpeakingComponentForm'
 
 interface Props {
   component: SceneComponent
@@ -82,6 +85,24 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
                   </a>
                 ) : null
               }
+            />
+          </Form.Item>
+        </Form>
+      )
+    case 'material_follow_reading_anchor':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item
+            label="id"
+            help="自学课跟读列表中的句子 index，0 表示第一句；该组件不在学员端画面中展示。"
+          >
+            <InputNumber
+              min={0}
+              step={1}
+              precision={0}
+              style={{ width: '100%' }}
+              value={Number(component.id) || 0}
+              onChange={(v) => onChange({ ...component, id: v ?? 0 })}
             />
           </Form.Item>
         </Form>
@@ -277,6 +298,12 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
       )
     case 'follow_reading':
       return <FollowReadingComponentForm value={component} onChange={onChange} />
+    case 'single_choice':
+      return <SingleChoiceComponentForm value={component} onChange={onChange} />
+    case 'voice_qa_simple':
+      return <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
+    case 'guided_speaking':
+      return <GuidedSpeakingComponentForm value={component} onChange={onChange} />
     default: {
       const _e: never = component
       return _e

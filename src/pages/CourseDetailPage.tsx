@@ -331,6 +331,8 @@ export default function CourseDetailPage() {
     msForm.setFieldsValue({
       title: m.title,
       description: m.description ?? undefined,
+      hero_image_url: m.hero_image_url ?? undefined,
+      hero_mask_image_url: m.hero_mask_image_url ?? undefined,
     })
     setMsModalOpen(true)
   }
@@ -521,9 +523,14 @@ export default function CourseDetailPage() {
     }
     if (isAtbV2Document(doc)) {
       const errors = validateDocument(doc as unknown as AtbReactionDocument)
-      if (errors.length) {
-        message.error(`V2 脚本校验失败：${errors[0]}`)
+      const hardErrors = errors.filter((e) => !e.startsWith('[提示]'))
+      const warnings = errors.filter((e) => e.startsWith('[提示]'))
+      if (hardErrors.length) {
+        message.error(`V2 脚本校验失败：${hardErrors[0]}`)
         return
+      }
+      if (warnings.length) {
+        message.warning(`V2 脚本提示：${warnings[0]}`)
       }
     }
     setAtbJsonSaving(true)
@@ -771,7 +778,16 @@ export default function CourseDetailPage() {
                     />,
                   ]}
                 >
-                  <List.Item.Meta title={item.title} description={item.description || undefined} />
+                  <List.Item.Meta
+                    title={
+                      <Space size={6} wrap>
+                        <span>{item.title}</span>
+                        {item.hero_image_url ? <Tag color="gold">Hero</Tag> : null}
+                        {item.hero_mask_image_url ? <Tag color="blue">遮罩</Tag> : null}
+                      </Space>
+                    }
+                    description={item.description || undefined}
+                  />
                 </List.Item>
               )}
             />
@@ -971,6 +987,7 @@ export default function CourseDetailPage() {
         open={msModalOpen}
         onCancel={() => setMsModalOpen(false)}
         onOk={() => void submitMilestone()}
+        width={560}
         destroyOnClose
       >
         <Form form={msForm} layout="vertical" style={{ marginTop: 8 }}>
@@ -978,7 +995,60 @@ export default function CourseDetailPage() {
             <Input />
           </Form.Item>
           <Form.Item name="description" label="描述">
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={3} placeholder="Learner 首页 Milestone 副标题" />
+          </Form.Item>
+          <Form.Item
+            name="hero_image_url"
+            label="Hero 主图（底层）"
+            extra={
+              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                <Text type="secondary">
+                  Learner 首页三明治结构的最下层背景图；不含底部弧线，推荐横图。规范见{' '}
+                  <Text code>docs/course-hero-cover-design-spec.md</Text>
+                </Text>
+                <Space wrap>
+                  <Link to="/image-creative">
+                    <Button size="small" icon={<PictureOutlined />}>
+                      图片创意生图
+                    </Button>
+                  </Link>
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={() => {
+                      const title = msForm.getFieldValue('title') as string | undefined
+                      const desc = msForm.getFieldValue('description') as string | undefined
+                      void navigator.clipboard.writeText(buildHeroPromptAssistantMessage(title ?? '', desc ?? ''))
+                      message.success('已复制顾问话术，可在图片创意左侧对话粘贴')
+                    }}
+                  >
+                    复制顾问话术
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(HERO_PROMPT_TEMPLATE_EN)
+                      message.success('已复制英文 gpt-image 模板')
+                    }}
+                  >
+                    复制英文模板
+                  </Button>
+                </Space>
+              </Space>
+            }
+          >
+            <ImageOssUploadField placeholder="上传 Milestone Hero 主图" />
+          </Form.Item>
+          <Form.Item
+            name="hero_mask_image_url"
+            label="Hero 弧线遮罩（顶层）"
+            extra={
+              <Text type="secondary">
+                叠在卡片之上的全宽 PNG：顶部透明 + 弧线切口，下方纯白，用于与下方内容区无缝衔接。
+              </Text>
+            }
+          >
+            <ImageOssUploadField placeholder="上传弧线遮罩图" />
           </Form.Item>
         </Form>
       </Modal>
