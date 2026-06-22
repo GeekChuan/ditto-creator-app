@@ -14,6 +14,8 @@ import {
   RocketOutlined,
   GiftOutlined,
   PictureOutlined,
+  FieldTimeOutlined,
+  SoundOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -34,12 +36,15 @@ export default function MainLayout() {
     { key: '/benefits', icon: <GiftOutlined />, label: '权益码运营' },
     { key: '/lexicon', icon: <BookOutlined />, label: '单词库' },
     { key: '/image-creative', icon: <PictureOutlined />, label: '图片创意' },
+    { key: '/subtitle-timing', icon: <FieldTimeOutlined />, label: '字幕打轴器' },
     ...(user?.role === 'super_admin'
       ? [
           { key: '/tools', icon: <ExperimentOutlined />, label: '工具中心' },
+          { key: '/voice-clone', icon: <SoundOutlined />, label: '语音克隆' },
           { key: '/course-agent-studio', icon: <RocketOutlined />, label: 'AI 课程工坊' },
           { key: '/users', icon: <TeamOutlined />, label: '用户管理' },
           { key: '/learner-admin', icon: <DeploymentUnitOutlined />, label: 'Learner 管理' },
+          { key: '/lesson-image-gen', icon: <PictureOutlined />, label: '课节图片生成器' },
           { key: '/lesson-json-design', icon: <CodeOutlined />, label: '课程 JSON 设计' },
           { key: '/lesson-json-design-v2', icon: <CodeOutlined />, label: '课程 JSON 设计 V2' },
         ]

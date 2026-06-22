@@ -60,7 +60,7 @@ export default function AddSubtitleModal({ open, asset, onClose, onSuccess }: Pr
       <Alert
         showIcon
         type="info"
-        message="字幕打轴与字幕 Agent 工具暂未开放（TBD）"
+        message="字幕 Agent 工具暂未开放（TBD）；手动打轴请使用侧栏「字幕打轴器」"
         style={{ marginBottom: 14 }}
       />
       <Form form={form} layout="vertical">
