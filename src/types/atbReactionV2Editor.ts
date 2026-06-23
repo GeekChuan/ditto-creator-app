@@ -17,8 +17,10 @@ import {
   DEFAULT_PLAY_VIDEO_STATUS_TITLE,
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+  DEFAULT_VOICE_QA_INSTRUCTION_HINT,
   DEFAULT_VOICE_QA_MAX_ATTEMPTS,
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+  DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
   isLectureWithPracticeActivity,
   isSubmergeSequenceActivity,
@@ -167,6 +169,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return {
         type: 'voice_qa_simple',
         instruction_primary: DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+        instruction_hint: DEFAULT_VOICE_QA_INSTRUCTION_HINT,
         hint_markdown: '',
         question_en: '',
         question_zh: '',
@@ -182,6 +185,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return {
         type: 'guided_speaking',
         instruction_primary: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+        instruction_hint: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
         task_description: '',
         expression_goals: [''],
         initial_hint_markdown: '',

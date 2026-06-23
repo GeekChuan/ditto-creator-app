@@ -178,11 +178,15 @@ export interface SingleChoiceComponent {
 }
 
 export const DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_VOICE_QA_INSTRUCTION_HINT =
+  '中文、英文、中英混杂都可以，开口是通向流利说的起点！'
 export const DEFAULT_VOICE_QA_MAX_ATTEMPTS = 2
 
 export interface VoiceQaSimpleComponent {
   type: 'voice_qa_simple'
   instruction_primary?: string
+  /** 辅助小字提示，默认鼓励开口 */
+  instruction_hint?: string
   /** 白板 3~4 行 Markdown 提示 */
   hint_markdown: string
   question_en: string
@@ -201,11 +205,15 @@ export interface VoiceQaSimpleComponent {
 }
 
 export const DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY = '请用语音回答'
+export const DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT =
+  '中文、英文、中英混杂都可以，开口是通向流利说的起点！'
 export const DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS = 8
 
 export interface GuidedSpeakingComponent {
   type: 'guided_speaking'
   instruction_primary?: string
+  /** 辅助小字提示，默认鼓励开口 */
+  instruction_hint?: string
   task_description: string
   expression_goals: string[]
   initial_hint_markdown?: string

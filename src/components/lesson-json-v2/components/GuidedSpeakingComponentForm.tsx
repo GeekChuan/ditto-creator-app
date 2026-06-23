@@ -1,6 +1,7 @@
 import { Button, Form, Input, InputNumber, Space } from 'antd'
 import type { GuidedSpeakingComponent } from '../../../types/atbReactionV2'
 import {
+  DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
 } from '../../../types/atbReactionV2'
@@ -27,6 +28,13 @@ export default function GuidedSpeakingComponentForm({ value, onChange }: Props) 
           value={value.instruction_primary ?? ''}
           placeholder={DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY}
           onChange={(e) => onChange({ ...value, instruction_primary: e.target.value })}
+        />
+      </Form.Item>
+      <Form.Item label="instruction_hint" help={`默认：${DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT}`}>
+        <Input
+          value={value.instruction_hint ?? ''}
+          placeholder={DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT}
+          onChange={(e) => onChange({ ...value, instruction_hint: e.target.value })}
         />
       </Form.Item>
       <Form.Item label="task_description" required help="学员可见任务描述">
