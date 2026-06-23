@@ -16,6 +16,7 @@ import {
   isVoiceQaSimpleNode,
   isGuidedSpeakingNode,
   moveItem,
+  newNodeId,
 } from '../../types/atbReactionV2Editor'
 import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import type { SelectionPath } from '../../types/atbReactionV2Editor'
@@ -48,14 +49,7 @@ export default function NodeListEditor({
   }
 
   const addNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createDefaultNode(activity.type, src, id)])
+    updateNodes([...activity.nodes, createDefaultNode(activity.type, src, newNodeId())])
   }
 
   const addEndButton = (nodeIndex: number) => {
@@ -72,58 +66,23 @@ export default function NodeListEditor({
   }
 
   const addPlayVideoNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createPlayVideoNode(src, id)])
+    updateNodes([...activity.nodes, createPlayVideoNode(src, newNodeId())])
   }
 
   const addFollowReadingNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createFollowReadingNode(src, id)])
+    updateNodes([...activity.nodes, createFollowReadingNode(src, newNodeId())])
   }
 
   const addSingleChoiceNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createSingleChoiceNode(src, id)])
+    updateNodes([...activity.nodes, createSingleChoiceNode(src, newNodeId())])
   }
 
   const addVoiceQaSimpleNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createVoiceQaSimpleNode(src, id)])
+    updateNodes([...activity.nodes, createVoiceQaSimpleNode(src, newNodeId())])
   }
 
   const addGuidedSpeakingNode = () => {
-    const id = activity.nodes.length
-      ? Math.max(
-          ...activity.nodes.map((n) =>
-            typeof n.id === 'number' ? n.id : parseInt(String(n.id), 10) || 0,
-          ),
-        ) + 1
-      : 1
-    updateNodes([...activity.nodes, createGuidedSpeakingNode(src, id)])
+    updateNodes([...activity.nodes, createGuidedSpeakingNode(src, newNodeId())])
   }
 
   const nodeColumns: ColumnsType<SceneNode> = [
@@ -170,7 +129,7 @@ export default function NodeListEditor({
             size="small"
             onClick={() => {
               const copy = structuredClone(node)
-              copy.id = (typeof copy.id === 'number' ? copy.id : 0) + 1000
+              copy.id = newNodeId()
               updateNodes([...activity.nodes, copy])
             }}
           >

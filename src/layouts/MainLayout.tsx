@@ -45,6 +45,7 @@ export default function MainLayout() {
           { key: '/users', icon: <TeamOutlined />, label: '用户管理' },
           { key: '/learner-admin', icon: <DeploymentUnitOutlined />, label: 'Learner 管理' },
           { key: '/lesson-image-gen', icon: <PictureOutlined />, label: '课节图片生成器' },
+          { key: '/lesson-image-gen-v2', icon: <PictureOutlined />, label: '课节图片生成器 V2' },
           { key: '/lesson-json-design', icon: <CodeOutlined />, label: '课程 JSON 设计' },
           { key: '/lesson-json-design-v2', icon: <CodeOutlined />, label: '课程 JSON 设计 V2' },
         ]

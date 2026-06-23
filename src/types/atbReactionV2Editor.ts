@@ -68,6 +68,10 @@ export function newSrcId(): string {
   return crypto.randomUUID()
 }
 
+export function newNodeId(): string {
+  return crypto.randomUUID()
+}
+
 export function nextActivityId(activities: AtbActivity[]): number {
   const nums = activities
     .map((a) => (typeof a.id === 'number' ? a.id : parseInt(String(a.id), 10)))
@@ -193,7 +197,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
   }
 }
 
-export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   if (activityType === 'submerge_sequence') {
     return {
       id: nodeId,
@@ -233,7 +237,7 @@ export function isGuidedSpeakingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'guided_speaking')
 }
 
-export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -243,7 +247,7 @@ export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): Sce
   }
 }
 
-export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -254,7 +258,7 @@ export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): Scen
   }
 }
 
-export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -265,7 +269,7 @@ export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): Sce
   }
 }
 
-export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -276,7 +280,7 @@ export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): Sc
   }
 }
 
-export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -297,7 +301,7 @@ export function createSubmergeActivity(id: number, src: AtbSrcAsset[]): Submerge
     common_layout: 'single_image_text',
     description: '',
     end_signal: endSignal,
-    nodes: [createDefaultNode('submerge_sequence', src, 1)],
+    nodes: [createDefaultNode('submerge_sequence', src, newNodeId())],
   }
 }
 
@@ -309,7 +313,7 @@ export function createLectureActivity(id: number, src: AtbSrcAsset[]): LectureWi
     layout: 'react_teaching_with_practice',
     description: '',
     video_source_id: video?.id ?? '',
-    nodes: [createDefaultNode('lecture_with_practice', src, 1)],
+    nodes: [createDefaultNode('lecture_with_practice', src, newNodeId())],
   }
 }
 

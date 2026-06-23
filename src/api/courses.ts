@@ -11,6 +11,8 @@ export interface CourseOut {
   cover_image_url: string | null
   theme_color: string | null
   branding: CourseBranding | null
+  show_creator_stats: boolean
+  show_fan_reviews: boolean
   created_at: string
   updated_at: string
 }
@@ -22,6 +24,8 @@ export interface CourseCreate {
   cover_image_url?: string | null
   theme_color?: string | null
   branding?: CourseBranding | null
+  show_creator_stats?: boolean
+  show_fan_reviews?: boolean
 }
 
 export interface CourseUpdate {
@@ -31,6 +35,8 @@ export interface CourseUpdate {
   cover_image_url?: string | null
   theme_color?: string | null
   branding?: CourseBranding | null
+  show_creator_stats?: boolean
+  show_fan_reviews?: boolean
 }
 
 export interface MilestoneOut {
@@ -139,6 +145,9 @@ export const coursesApi = {
 
   putLessonAtbDitto: (lessonId: string, document: Record<string, unknown>): Promise<LessonOut> =>
     http.put(`${API_V1}/lessons/${lessonId}/atb-ditto`, document),
+
+  putLessonSelfStudyDitto: (lessonId: string, document: Record<string, unknown>): Promise<LessonOut> =>
+    http.put(`${API_V1}/lessons/${lessonId}/self-study-ditto`, document),
 
   deleteLesson: (lessonId: string): Promise<void> => http.delete(`${API_V1}/lessons/${lessonId}`),
 

@@ -235,6 +235,7 @@ export type SceneComponent =
 export type SceneComponentType = SceneComponent['type']
 
 export interface SceneNode {
+  /** Stable node UUID for progress checkpoints; number is kept for legacy imported scripts. */
   id: number | string
   components: SceneComponent[]
   metadata?: Record<string, unknown>

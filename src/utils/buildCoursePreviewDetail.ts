@@ -15,6 +15,8 @@ export type CourseDetailPreview = {
     cover_image_url: string | null
     theme_color: string | null
     branding: CourseBranding | null
+    show_creator_stats: boolean
+    show_fan_reviews: boolean
     lesson_count: number
     progress_percent: number
     continue_lesson_id: string | null
@@ -98,6 +100,10 @@ export function buildCoursePreviewDetail(params: {
     formValues.theme_color !== undefined ? formValues.theme_color ?? null : course.theme_color
   const mergedBranding =
     formValues.branding !== undefined ? formValues.branding ?? null : course.branding ?? null
+  const mergedShowCreatorStats =
+    formValues.show_creator_stats !== undefined ? formValues.show_creator_stats : course.show_creator_stats ?? true
+  const mergedShowFanReviews =
+    formValues.show_fan_reviews !== undefined ? formValues.show_fan_reviews : course.show_fan_reviews ?? true
 
   const previewLessons = allLessons
     .map((lesson) => {
@@ -140,6 +146,8 @@ export function buildCoursePreviewDetail(params: {
       cover_image_url: mergedCover,
       theme_color: mergedTheme,
       branding: mergedBranding,
+      show_creator_stats: mergedShowCreatorStats,
+      show_fan_reviews: mergedShowFanReviews,
       lesson_count: previewLessons.length,
       progress_percent: 0,
       continue_lesson_id: continueLesson?.id ?? null,

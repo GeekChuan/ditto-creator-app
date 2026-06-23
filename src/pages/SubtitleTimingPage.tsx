@@ -47,6 +47,7 @@ import {
   formatMs,
   normalizeStoredSubtitleSegments,
 } from '../components/subtitle-timing/normalizeSegments'
+import { buildSelfStudyV2Export } from '../components/subtitle-timing/buildSelfStudyExport'
 import type { VideoSubtitleSegment } from '../types/atbReactionV2'
 
 const { Title, Text, Paragraph } = Typography
@@ -80,6 +81,24 @@ function buildTranscriptLines(
     .sort((a, b) => a.start_ms - b.start_ms)
     .map((seg) => (field === 'text' ? seg.text : seg.translation_zh)?.trim())
     .filter((line): line is string => Boolean(line))
+}
+
+function buildDirectorPrepScript(segments: VideoSubtitleSegment[]): string {
+  return [...segments]
+    .sort((a, b) => a.start_ms - b.start_ms)
+    .map((seg) => ({
+      text: seg.text.trim(),
+      timeRange: `${formatMs(seg.start_ms)} - ${formatMs(seg.end_ms)}`,
+      prepNote: seg.prep_note?.trim() || '',
+    }))
+    .filter((item) => item.text)
+    .map((item, index) => [
+      `序号：${index + 1}`,
+      `原稿：${item.text}`,
+      `时间戳：${item.timeRange}`,
+      `备课备注：${item.prepNote}`,
+    ].join('\n'))
+    .join('\n\n')
 }
 
 function downloadTextFile(filename: string, content: string) {
@@ -353,6 +372,29 @@ export default function SubtitleTimingPage() {
     messageApi.success(`已导出 ${filename}`)
   }, [asset, messageApi, segments])
 
+  const handleExportSelfStudyV2Json = useCallback(() => {
+    if (!asset) {
+      messageApi.warning('请先选择视频素材')
+      return
+    }
+    if (!segments.length) {
+      messageApi.warning('暂无字幕可导出')
+      return
+    }
+    if (dirty) {
+      messageApi.warning('请先保存字幕，再导出自学课 JSON')
+      return
+    }
+    const payload = buildSelfStudyV2Export({
+      asset,
+      segments,
+      metadataBundle,
+    })
+    const filename = `${safeDownloadFilename(asset.title)}-self-study-v2.json`
+    downloadTextFile(filename, `${JSON.stringify(payload, null, 2)}\n`)
+    messageApi.success(`已导出 ${filename}`)
+  }, [asset, dirty, messageApi, metadataBundle, segments])
+
   const handleImportSubtitleJsonClick = useCallback(() => {
     subtitleJsonInputRef.current?.click()
   }, [])
@@ -579,6 +621,17 @@ export default function SubtitleTimingPage() {
     messageApi.success(`已下载 ${filename}`)
   }, [asset?.title, messageApi, segments])
 
+  const handleDownloadDirectorPrepScript = useCallback(() => {
+    const content = buildDirectorPrepScript(segments)
+    if (!content) {
+      messageApi.warning('暂无导演组稿件可导出')
+      return
+    }
+    const filename = `${safeDownloadFilename(asset?.title)}-director-prep-script.txt`
+    downloadTextFile(filename, `${content}\n`)
+    messageApi.success(`已导出 ${filename}`)
+  }, [asset?.title, messageApi, segments])
+
   const buildRealignPayload = useCallback(() => buildSegmentPayload(segments), [segments])
 
   const handleRealign = useCallback(() => {
@@ -662,6 +715,13 @@ export default function SubtitleTimingPage() {
                     >
                       保存到元数据
                     </Button>
+                    <Button
+                      icon={<DownloadOutlined />}
+                      disabled={segments.length === 0 || extractingPrep}
+                      onClick={handleDownloadDirectorPrepScript}
+                    >
+                      导出导演组稿件
+                    </Button>
                   </>
                 ) : null}
                 <Button
@@ -692,6 +752,14 @@ export default function SubtitleTimingPage() {
                   onClick={handleExportSubtitleJson}
                 >
                   导出字幕轴 JSON
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  disabled={!asset || segments.length === 0 || dirty || extractingPrep}
+                  onClick={handleExportSelfStudyV2Json}
+                >
+                  导出自学课 JSON（V2）
                 </Button>
                 <Button
                   icon={<ImportOutlined />}
