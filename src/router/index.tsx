@@ -17,6 +17,9 @@ import LessonJsonDesignV2Page from '../pages/lesson-json-design-v2/LessonJsonDes
 import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudioPage'
 import BenefitsPage from '../pages/BenefitsPage'
 import ImageCreativePage from '../pages/ImageCreativePage'
+import LessonImageGenPage from '../pages/LessonImageGenPage'
+import SubtitleTimingPage from '../pages/SubtitleTimingPage'
+import VoiceClonePage from '../pages/VoiceClonePage'
 import ProtectedRoute from '../auth/ProtectedRoute'
 
 export default function AppRouter() {
@@ -34,7 +37,9 @@ export default function AppRouter() {
           <Route path="benefits" element={<BenefitsPage />} />
           <Route path="lexicon" element={<LexiconPage />} />
           <Route path="image-creative" element={<ImageCreativePage />} />
+          <Route path="subtitle-timing" element={<SubtitleTimingPage />} />
           <Route element={<ProtectedRoute requireSuperAdmin />}>
+            <Route path="lesson-image-gen" element={<LessonImageGenPage />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="learner-admin" element={<LearnerAdminPage />} />
             <Route path="lesson-json-design" element={<LessonJsonDesignPage />} />
@@ -43,6 +48,7 @@ export default function AppRouter() {
             <Route path="tools/:toolId" element={<ToolDetailPage />} />
             <Route path="agents/:agentId" element={<AgentDetailPage />} />
             <Route path="course-agent-studio" element={<CourseAgentStudioPage />} />
+            <Route path="voice-clone" element={<VoiceClonePage />} />
           </Route>
         </Route>
       </Route>

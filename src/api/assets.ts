@@ -1,5 +1,6 @@
 import axios from 'axios'
 import http from './http'
+import { getToken } from './authStorage'
 
 export interface VideoAsset {
   id: string
@@ -140,6 +141,99 @@ export interface SubtitleTask {
   created_at: string
 }
 
+export interface SubtitleUpsert {
+  segments: Array<{
+    start_ms: number
+    end_ms: number
+    text: string
+    translation_zh?: string
+    highlights?: string[]
+    prep_note?: string
+    prep_words?: string[]
+    prep_phrases?: Array<{ phrase: string; translation_zh?: string; explanation?: string }>
+    prep_expressions?: Array<{ expression: string; translation_zh?: string; explanation?: string }>
+    words?: Array<Record<string, unknown>>
+  }>
+}
+
+export interface SubtitleRealign {
+  segments: SubtitleUpsert['segments']
+  caption_type?: 'speech' | 'singing'
+}
+
+export interface SubtitlePrepExtractResult {
+  segments: SubtitleUpsert['segments']
+  phrases_added: number
+  expressions_added: number
+}
+
+export type SubtitlePrepExtractStreamEvent =
+  | { type: 'start'; total_segments: number; total_chunks: number; chunk_size: number }
+  | { type: 'chunk_start'; chunk_index: number; total_chunks: number; segment_indexes: number[] }
+  | {
+    type: 'llm_attempt_start'
+    chunk_index: number
+    total_chunks: number
+    segment_indexes: number[]
+    kind: 'phrases' | 'expressions'
+    attempt: number
+    max_attempts: number
+    mode: 'custom_prompt' | 'builtin_retry_prompt'
+  }
+  | {
+    type: 'llm_attempt_ok'
+    chunk_index: number
+    total_chunks: number
+    segment_indexes: number[]
+    kind: 'phrases' | 'expressions'
+    attempt: number
+    items_count: number
+    raw_preview?: string
+    raw_output?: string
+  }
+  | {
+    type: 'llm_normalized'
+    chunk_index: number
+    total_chunks: number
+    segment_indexes: number[]
+    kind: 'phrases' | 'expressions'
+    raw_items_count: number
+    usable_items_count: number
+    matched_segment_count: number
+    unmatched_indexes: Array<string | number | null>
+  }
+  | {
+    type: 'llm_attempt_failed'
+    chunk_index: number
+    total_chunks: number
+    segment_indexes: number[]
+    kind: 'phrases' | 'expressions'
+    attempt: number
+    max_attempts: number
+    detail: string
+    raw_chars: number
+    raw_output?: string
+  }
+  | {
+    type: 'chunk_result'
+    chunk_index: number
+    total_chunks: number
+    segments: Array<{
+      index: number
+      segment: SubtitleUpsert['segments'][number]
+      phrases_added: number
+      expressions_added: number
+    }>
+    phrases_added: number
+    expressions_added: number
+    total_phrases_added: number
+    total_expressions_added: number
+  }
+  | { type: 'done'; segments: SubtitleUpsert['segments']; phrases_added: number; expressions_added: number }
+  | { type: 'cancelled'; detail: string }
+  | { type: 'chunk_error'; detail: string; chunk_index: number; total_chunks: number; segment_indexes: number[] }
+  | { type: 'error'; detail: string; chunk_index?: number; total_chunks?: number }
+
 export interface SubtitleData {
   id: string
   video_asset_id: string
@@ -148,6 +242,41 @@ export interface SubtitleData {
   source_tool: string
   created_at: string
   updated_at: string
+}
+
+export interface VideoMetadataBundle {
+  subtitle_id: string | null
+  vocabulary_id: string | null
+  vocabulary_payload: { items?: Array<Record<string, unknown>> } | null
+  phrases_id: string | null
+  phrases_payload: { items?: Array<Record<string, unknown>> } | null
+  expressions_id: string | null
+  expressions_payload: { items?: Array<Record<string, unknown>> } | null
+}
+
+export interface PrepMetadataSyncResult {
+  vocabulary_id: string
+  phrases_id: string
+  expressions_id: string
+  vocabulary_count: number
+  phrases_count: number
+  expressions_count: number
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}${path}`
+}
+
+async function parseErrorResponse(res: Response): Promise<string> {
+  try {
+    const data = await res.json()
+    if (typeof data?.detail === 'string') return data.detail
+  } catch {
+    // fall through
+  }
+  return `${res.status} ${res.statusText}`.trim()
 }
 
 export const assetsApi = {
@@ -262,4 +391,66 @@ export const assetsApi = {
 
   getSubtitle: (assetId: string): Promise<SubtitleData> =>
     http.get(`/api/v1/assets/${assetId}/subtitle`),
+
+  upsertSubtitle: (assetId: string, body: SubtitleUpsert): Promise<SubtitleData> =>
+    http.put(`/api/v1/assets/${assetId}/subtitle`, body),
+
+  realignSubtitle: (assetId: string, body: SubtitleRealign): Promise<SubtitleData> =>
+    http.post(`/api/v1/assets/${assetId}/subtitle-realign`, body, { timeout: 420_000 }),
+
+  prepExtract: (assetId: string, segments: SubtitleUpsert['segments']): Promise<SubtitlePrepExtractResult> =>
+    http.post(`/api/v1/assets/${assetId}/prep-extract`, { segments }, { timeout: 120_000 }),
+
+  prepExtractStream: async (
+    assetId: string,
+    segments: SubtitleUpsert['segments'],
+    options: {
+      signal?: AbortSignal
+      onEvent: (event: SubtitlePrepExtractStreamEvent) => void
+    },
+  ): Promise<void> => {
+    const token = getToken()
+    const res = await fetch(apiUrl(`/api/v1/assets/${assetId}/prep-extract-stream`), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ segments }),
+      signal: options.signal,
+    })
+
+    if (!res.ok) {
+      throw new Error(await parseErrorResponse(res))
+    }
+    if (!res.body) {
+      throw new Error('浏览器不支持流式响应')
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        options.onEvent(JSON.parse(trimmed) as SubtitlePrepExtractStreamEvent)
+      }
+    }
+    const rest = buffer.trim()
+    if (rest) {
+      options.onEvent(JSON.parse(rest) as SubtitlePrepExtractStreamEvent)
+    }
+  },
+
+  getMetadata: (assetId: string): Promise<VideoMetadataBundle> =>
+    http.get(`/api/v1/assets/${assetId}/metadata`),
+
+  syncPrepMetadata: (assetId: string, segments: SubtitleUpsert['segments']): Promise<PrepMetadataSyncResult> =>
+    http.put(`/api/v1/assets/${assetId}/metadata/prep-sync`, { segments }),
 }

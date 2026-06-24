@@ -1,5 +1,6 @@
 import { assetsApi } from '../../../api/assets'
 import type { SubtitleCue, VideoSubtitleSegment } from '../../../types/atbReactionV2'
+import { toSubtitleMs } from '../../subtitle-timing/normalizeSegments'
 
 /** 火山引擎 asr-forced-align / speech-recognition 返回片段 → 字幕 cue */
 export function mapForcedAlignSegments(
@@ -12,8 +13,8 @@ export function mapForcedAlignSegments(
     const startRaw = Number(seg.start_time ?? seg.start_ms ?? 0)
     const endRaw = Number(seg.end_time ?? seg.end_ms ?? startRaw)
     cues.push({
-      start_ms: Math.round(startRaw),
-      end_ms: Math.round(endRaw),
+      start_ms: toSubtitleMs(startRaw),
+      end_ms: toSubtitleMs(endRaw, toSubtitleMs(startRaw)),
       text,
     })
   }
@@ -25,13 +26,13 @@ export function mapUtterancesToVideoSegments(
 ): VideoSubtitleSegment[] {
   const segments: VideoSubtitleSegment[] = []
   for (const u of utterances) {
-    const start = Number(u.start_time ?? u.start_ms ?? u.begin_time ?? 0)
-    const end = Number(u.end_time ?? u.end_ms ?? u.finish_time ?? 0)
     const text = String(u.text ?? u.content ?? '').trim()
     if (!text) continue
-    const startMs = start > 10000 ? start : Math.round(start * 1000)
-    const endMs = end > 10000 ? end : Math.round(end * 1000)
-    segments.push({ start_ms: startMs, end_ms: endMs, text })
+    const startRaw = u.start_ms ?? u.start_time ?? u.begin_time ?? 0
+    const endRaw = u.end_ms ?? u.end_time ?? u.finish_time ?? startRaw
+    const startMs = toSubtitleMs(startRaw)
+    const endMs = toSubtitleMs(endRaw, startMs)
+    segments.push({ start_ms: startMs, end_ms: Math.max(startMs, endMs), text })
   }
   return segments
 }

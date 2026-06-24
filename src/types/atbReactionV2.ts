@@ -24,12 +24,32 @@ export interface SubtitleCue {
   practical_expression?: { en: string; zh: string }
 }
 
+export interface PrepPhrase {
+  phrase: string
+  translation_zh?: string
+  explanation?: string
+}
+
+export interface PrepExpression {
+  expression: string
+  translation_zh?: string
+  explanation?: string
+}
+
 export interface VideoSubtitleSegment {
   start_ms: number
   end_ms: number
   text: string
   translation_zh?: string
   highlights?: string[]
+  /** 备课备注，仅在 Creator 字幕打轴器备课模式下编辑 */
+  prep_note?: string
+  /** 备课单词（同步到元数据词汇） */
+  prep_words?: string[]
+  /** 备课词组（同步到元数据短语） */
+  prep_phrases?: PrepPhrase[]
+  /** 备课句型/表达（同步到元数据重点表达） */
+  prep_expressions?: PrepExpression[]
   words?: SubtitleWord[]
 }
 
