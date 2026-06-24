@@ -41,10 +41,25 @@ export interface CourseImageStyleLocks {
   whiteboard: string
 }
 
+export interface CourseStyleBible {
+  version: string
+  [key: string]: unknown
+}
+
+export interface SceneArchetype {
+  key: string
+  useWhen: string
+  layoutPattern: string
+  textPattern: string[]
+  avoid?: string[]
+  [key: string]: unknown
+}
+
 export interface CourseImageTemplateOut {
   id: string
   creator_id: string
   course_id: string | null
+  image_type: 'submerge_sequence' | 'whiteboard' | null
   template_key: string
   template_version: string
   submerge_template: string
@@ -56,12 +71,19 @@ export interface CourseImageTemplateOut {
   safe_area_spec: SafeAreaSpec
   safe_area_specs: CourseImageSafeAreaSpecs
   style_locks: CourseImageStyleLocks
+  style_bible: CourseStyleBible
+  scene_archetypes: SceneArchetype[]
   is_active: boolean
   created_at: string
   updated_at: string
 }
 
-export type CourseImageTemplateCreate = Omit<CourseImageTemplateOut, 'id' | 'creator_id' | 'created_at' | 'updated_at'>
+export type CourseImageTemplateCreate =
+  Omit<CourseImageTemplateOut, 'id' | 'creator_id' | 'created_at' | 'updated_at' | 'image_type' | 'style_bible' | 'scene_archetypes'> & {
+    image_type?: 'submerge_sequence' | 'whiteboard' | null
+    style_bible?: CourseStyleBible
+    scene_archetypes?: SceneArchetype[]
+  }
 
 export type CourseImageTemplateUpdate = Partial<CourseImageTemplateCreate>
 

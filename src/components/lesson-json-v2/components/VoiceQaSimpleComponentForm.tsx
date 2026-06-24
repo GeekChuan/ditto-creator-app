@@ -1,6 +1,7 @@
 import { Button, Form, Input, InputNumber, Space } from 'antd'
 import type { VoiceQaSimpleComponent } from '../../../types/atbReactionV2'
 import {
+  DEFAULT_VOICE_QA_INSTRUCTION_HINT,
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
   DEFAULT_VOICE_QA_MAX_ATTEMPTS,
 } from '../../../types/atbReactionV2'
@@ -27,6 +28,13 @@ export default function VoiceQaSimpleComponentForm({ value, onChange }: Props) {
           value={value.instruction_primary ?? ''}
           placeholder={DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY}
           onChange={(e) => onChange({ ...value, instruction_primary: e.target.value })}
+        />
+      </Form.Item>
+      <Form.Item label="instruction_hint" help={`默认：${DEFAULT_VOICE_QA_INSTRUCTION_HINT}`}>
+        <Input
+          value={value.instruction_hint ?? ''}
+          placeholder={DEFAULT_VOICE_QA_INSTRUCTION_HINT}
+          onChange={(e) => onChange({ ...value, instruction_hint: e.target.value })}
         />
       </Form.Item>
       <Form.Item

@@ -6,6 +6,7 @@ export interface CourseImageComposerOut {
   id: string
   creator_id: string
   course_id: string | null
+  image_type: 'submerge_sequence' | 'whiteboard' | null
   composer_key: string
   composer_version: string
   system_prompt: string
@@ -16,7 +17,10 @@ export interface CourseImageComposerOut {
   updated_at: string
 }
 
-export type CourseImageComposerCreate = Omit<CourseImageComposerOut, 'id' | 'creator_id' | 'created_at' | 'updated_at'>
+export type CourseImageComposerCreate =
+  Omit<CourseImageComposerOut, 'id' | 'creator_id' | 'created_at' | 'updated_at' | 'image_type'> & {
+    image_type?: 'submerge_sequence' | 'whiteboard' | null
+  }
 
 export type CourseImageComposerUpdate = Partial<CourseImageComposerCreate>
 

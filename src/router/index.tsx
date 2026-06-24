@@ -18,6 +18,7 @@ import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudi
 import BenefitsPage from '../pages/BenefitsPage'
 import ImageCreativePage from '../pages/ImageCreativePage'
 import LessonImageGenPage from '../pages/LessonImageGenPage'
+import LessonImageGenV2Page from '../pages/lesson-image-gen-v2/LessonImageGenV2Page'
 import SubtitleTimingPage from '../pages/SubtitleTimingPage'
 import VoiceClonePage from '../pages/VoiceClonePage'
 import ProtectedRoute from '../auth/ProtectedRoute'
@@ -40,6 +41,7 @@ export default function AppRouter() {
           <Route path="subtitle-timing" element={<SubtitleTimingPage />} />
           <Route element={<ProtectedRoute requireSuperAdmin />}>
             <Route path="lesson-image-gen" element={<LessonImageGenPage />} />
+            <Route path="lesson-image-gen-v2" element={<LessonImageGenV2Page />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="learner-admin" element={<LearnerAdminPage />} />
             <Route path="lesson-json-design" element={<LessonJsonDesignPage />} />

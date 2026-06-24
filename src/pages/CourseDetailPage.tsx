@@ -15,6 +15,7 @@ import {
   Select,
   Space,
   Spin,
+  Switch,
   Tag,
   Typography,
   Upload,
@@ -65,13 +66,25 @@ import {
   validateDocument,
 } from '../types/atbReactionV2Editor'
 import type { AtbReactionDocument } from '../types/atbReactionV2'
+import {
+  createEmptyDocument as createEmptySelfStudyDocument,
+  stringifyDocument as stringifySelfStudyDocument,
+  validateDocument as validateSelfStudyDocument,
+} from '../types/selfStudyV2Editor'
+import { isSelfStudyV2Document } from '../types/selfStudyV2'
+import type { SelfStudyDocumentV2 } from '../types/selfStudyV2'
 
 const { Title, Text, Paragraph } = Typography
 
 /** 前端表单专用：映射到 DB lesson_type = atb_reaction */
 export const LESSON_TYPE_ATB_REACTION_V2 = 'atb_reaction_v2'
+/** 前端表单专用：映射到 DB lesson_type = material_library */
+export const LESSON_TYPE_MATERIAL_LIBRARY_V2 = 'material_library_v2'
 
-type LessonFormType = LessonType | typeof LESSON_TYPE_ATB_REACTION_V2
+type LessonFormType =
+  | LessonType
+  | typeof LESSON_TYPE_ATB_REACTION_V2
+  | typeof LESSON_TYPE_MATERIAL_LIBRARY_V2
 type LessonFormValues = Omit<LessonCreate & LessonUpdate, 'lesson_type'> & { lesson_type?: LessonFormType }
 
 function isAtbV2Document(doc: Record<string, unknown> | null | undefined): boolean {
@@ -96,8 +109,11 @@ function atbPayloadForEditor(row: LessonOut): Record<string, unknown> | null {
   return null
 }
 
-function lessonTypeTag(lessonType: string, atbPayload?: Record<string, unknown> | null) {
+function lessonTypeTag(lessonType: string, atbPayload?: Record<string, unknown> | null, dittoPayload?: Record<string, unknown> | null) {
   if (lessonType === LESSON_TYPE_MATERIAL_LIBRARY) {
+    if (isSelfStudyV2Document(dittoPayload)) {
+      return <Tag color="blue">自学课 V2</Tag>
+    }
     return <Tag color="blue">素材自学</Tag>
   }
   if (lessonType === LESSON_TYPE_ATB_REACTION) {
@@ -147,6 +163,9 @@ export default function CourseDetailPage() {
   const currentLessonType = Form.useWatch('lesson_type', lessonForm)
   const isAtbLessonType =
     currentLessonType === LESSON_TYPE_ATB_REACTION || currentLessonType === LESSON_TYPE_ATB_REACTION_V2
+  const isSelfStudyV2LessonType =
+    currentLessonType === LESSON_TYPE_MATERIAL_LIBRARY_V2
+      || (currentLessonType === LESSON_TYPE_MATERIAL_LIBRARY && editingLesson && isSelfStudyV2Document(editingLesson.ditto_payload))
   const [assetOptions, setAssetOptions] = useState<{ label: string; value: string }[]>([])
   const [assetSearchLoading, setAssetSearchLoading] = useState(false)
 
@@ -154,6 +173,10 @@ export default function CourseDetailPage() {
   const [atbJsonLesson, setAtbJsonLesson] = useState<LessonOut | null>(null)
   const [atbJsonText, setAtbJsonText] = useState('')
   const [atbJsonSaving, setAtbJsonSaving] = useState(false)
+  const [selfStudyJsonModalOpen, setSelfStudyJsonModalOpen] = useState(false)
+  const [selfStudyJsonLesson, setSelfStudyJsonLesson] = useState<LessonOut | null>(null)
+  const [selfStudyJsonText, setSelfStudyJsonText] = useState('')
+  const [selfStudyJsonSaving, setSelfStudyJsonSaving] = useState(false)
   const [allPreviewLessons, setAllPreviewLessons] = useState<LessonOut[]>([])
   const [creatorProfile, setCreatorProfile] = useState<CreatorProfileOut | null>(null)
   const [coursePublished, setCoursePublished] = useState(false)
@@ -287,6 +310,8 @@ export default function CourseDetailPage() {
         cover_image_url: course.cover_image_url ?? undefined,
         theme_color: course.theme_color ?? undefined,
         branding: course.branding ?? undefined,
+        show_creator_stats: course.show_creator_stats ?? true,
+        show_fan_reviews: course.show_fan_reviews ?? true,
       })
     }
   }, [course, courseForm])
@@ -426,7 +451,9 @@ export default function CourseDetailPage() {
       lesson_type:
         row.lesson_type === LESSON_TYPE_ATB_REACTION && isAtbV2Document(atbPayload)
           ? LESSON_TYPE_ATB_REACTION_V2
-          : row.lesson_type,
+          : row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY && isSelfStudyV2Document(row.ditto_payload)
+            ? LESSON_TYPE_MATERIAL_LIBRARY_V2
+            : row.lesson_type,
       video_asset_id: row.video_asset_id ?? undefined,
       cover_image_url: row.cover_image_url ?? undefined,
       duration_minutes: row.duration_minutes ?? undefined,
@@ -448,9 +475,14 @@ export default function CourseDetailPage() {
       const values = await lessonForm.validateFields()
       const rawType = values.lesson_type as string
       const isV2Atb = rawType === LESSON_TYPE_ATB_REACTION_V2
+      const isV2SelfStudy = rawType === LESSON_TYPE_MATERIAL_LIBRARY_V2
       const payload = {
         ...values,
-        lesson_type: isV2Atb ? LESSON_TYPE_ATB_REACTION : rawType,
+        lesson_type: isV2Atb
+          ? LESSON_TYPE_ATB_REACTION
+          : isV2SelfStudy
+            ? LESSON_TYPE_MATERIAL_LIBRARY
+            : rawType,
       } as LessonCreate & LessonUpdate
       if (editingLesson) {
         await coursesApi.updateLesson(editingLesson.id, payload as LessonUpdate)
@@ -459,8 +491,12 @@ export default function CourseDetailPage() {
         const created = await coursesApi.createLesson(selectedMilestoneId, payload as LessonCreate)
         if (isV2Atb) {
           await coursesApi.putLessonAtbDitto(created.id, createEmptyDocument() as unknown as Record<string, unknown>)
+          message.success('已创建 ATB V2 课节，可导入 JSON 脚本')
+        } else if (isV2SelfStudy) {
+          message.success('已创建自学课 V2 课节，请点击「自学课脚本」导入 JSON')
+        } else {
+          message.success('已创建课节')
         }
-        message.success(isV2Atb ? '已创建 ATB V2 课节，可导入 JSON 脚本' : '已创建课节')
       }
       setLessonModalOpen(false)
       void loadLessons()
@@ -549,9 +585,64 @@ export default function CourseDetailPage() {
     }
   }
 
+  const openSelfStudyJsonEditor = (row: LessonOut) => {
+    setSelfStudyJsonLesson(row)
+    const existing = row.ditto_payload
+    if (existing && isSelfStudyV2Document(existing)) {
+      setSelfStudyJsonText(JSON.stringify(existing, null, 2))
+    } else {
+      setSelfStudyJsonText(stringifySelfStudyDocument(createEmptySelfStudyDocument()))
+    }
+    setSelfStudyJsonModalOpen(true)
+  }
+
+  const handleSelfStudyJsonFileImport = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : ''
+      if (text.trim()) setSelfStudyJsonText(text)
+    }
+    reader.readAsText(file)
+    return false
+  }
+
+  const submitSelfStudyJson = async () => {
+    if (!selfStudyJsonLesson) return
+    let doc: SelfStudyDocumentV2
+    try {
+      doc = JSON.parse(selfStudyJsonText) as SelfStudyDocumentV2
+    } catch {
+      message.error('JSON 格式无效')
+      return
+    }
+    const errors = validateSelfStudyDocument(doc)
+    if (errors.length) {
+      message.error(`自学课 V2 校验失败：${errors[0]}`)
+      return
+    }
+    setSelfStudyJsonSaving(true)
+    try {
+      await coursesApi.putLessonSelfStudyDitto(selfStudyJsonLesson.id, doc as unknown as Record<string, unknown>)
+      message.success('已保存自学课 V2 脚本')
+      setSelfStudyJsonModalOpen(false)
+      setSelfStudyJsonLesson(null)
+      void loadLessons()
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string } } }
+      const d = err?.response?.data?.detail
+      message.error(typeof d === 'string' ? d : '保存失败')
+    } finally {
+      setSelfStudyJsonSaving(false)
+    }
+  }
+
   const rebuildLesson = async (row: LessonOut) => {
     if (row.lesson_type !== LESSON_TYPE_MATERIAL_LIBRARY) {
       message.warning('仅素材自学课支持刷新 Ditto')
+      return
+    }
+    if (isSelfStudyV2Document(row.ditto_payload)) {
+      message.warning('自学课 V2 请重新导入 JSON，不支持刷新 Ditto 快照')
       return
     }
     if (!row.video_asset_id) {
@@ -654,6 +745,22 @@ export default function CourseDetailPage() {
                 extra="页面背景暗纹 + 课节数/继续学习按钮共用图标"
               >
                 <CourseBrandingField />
+              </Form.Item>
+              <Form.Item
+                name="show_creator_stats"
+                label="显示博主数据"
+                valuePropName="checked"
+                extra="课程详情页展示创作者主页配置的「展示数据」（粉丝、好评率等）"
+              >
+                <Switch checkedChildren="开" unCheckedChildren="关" />
+              </Form.Item>
+              <Form.Item
+                name="show_fan_reviews"
+                label="显示粉丝评价"
+                valuePropName="checked"
+                extra="课程详情页展示创作者主页配置的「粉丝评价」引用"
+              >
+                <Switch checkedChildren="开" unCheckedChildren="关" />
               </Form.Item>
             </Col>
             <Col xs={24} xl={10}>
@@ -865,7 +972,7 @@ export default function CourseDetailPage() {
                         {row.description?.trim() || '（无描述）'}
                       </Paragraph>
                       <Space size={[4, 4]} wrap style={{ marginBottom: 12 }}>
-                        {lessonTypeTag(row.lesson_type, row.atb_ditto_payload ?? null)}
+                        {lessonTypeTag(row.lesson_type, row.atb_ditto_payload ?? null, row.ditto_payload ?? null)}
                         {hasSelfStudy(row) ? <Tag color="green">素材课</Tag> : null}
                         {hasAtb(row) ? (
                           isAtbV2Document(row.atb_ditto_payload ?? null) ? (
@@ -881,7 +988,7 @@ export default function CourseDetailPage() {
                       {row.lesson_type === LESSON_TYPE_MATERIAL_LIBRARY ? (
                         <>
                           <Divider orientation="left" plain style={{ margin: '8px 0' }}>
-                            素材自学配置
+                            {isSelfStudyV2Document(row.ditto_payload) ? '自学课 V2 配置' : '素材自学配置'}
                           </Divider>
                           <Space direction="vertical" size="small" style={{ width: '100%' }}>
                             <Text type="secondary">
@@ -893,9 +1000,19 @@ export default function CourseDetailPage() {
                               )}
                             </Text>
                             <Space wrap onClick={(e) => e.stopPropagation()}>
-                              <Button size="small" disabled={!row.video_asset_id} onClick={() => void rebuildLesson(row)}>
-                                刷新 Ditto 快照
+                              <Button
+                                size="small"
+                                type={isSelfStudyV2Document(row.ditto_payload) ? 'primary' : 'default'}
+                                icon={<FileTextOutlined />}
+                                onClick={() => openSelfStudyJsonEditor(row)}
+                              >
+                                自学课脚本
                               </Button>
+                              {!isSelfStudyV2Document(row.ditto_payload) ? (
+                                <Button size="small" disabled={!row.video_asset_id} onClick={() => void rebuildLesson(row)}>
+                                  刷新 Ditto 快照
+                                </Button>
+                              ) : null}
                             </Space>
                             {row.ditto_payload ? (
                               <Collapse
@@ -903,7 +1020,9 @@ export default function CourseDetailPage() {
                                 items={[
                                   {
                                     key: 'self',
-                                    label: '自学 ditto_payload 预览',
+                                    label: isSelfStudyV2Document(row.ditto_payload)
+                                      ? '自学课 V2 JSON 预览'
+                                      : '自学 ditto_payload 预览',
                                     children: (
                                       <pre
                                         style={{
@@ -1070,7 +1189,8 @@ export default function CourseDetailPage() {
           >
             <Select
               options={[
-                { label: '素材自学课', value: LESSON_TYPE_MATERIAL_LIBRARY },
+                { label: '素材自学课 (V1)', value: LESSON_TYPE_MATERIAL_LIBRARY },
+                { label: '自学课 V2（字幕打轴器导出 JSON）', value: LESSON_TYPE_MATERIAL_LIBRARY_V2 },
                 { label: 'ATB 互动课 (V1)', value: LESSON_TYPE_ATB_REACTION },
                 { label: 'ATB 互动课 V2 (atbReactionLessonV2)', value: LESSON_TYPE_ATB_REACTION_V2 },
               ]}
@@ -1111,12 +1231,16 @@ export default function CourseDetailPage() {
           >
             <Input.TextArea rows={2} maxLength={400} showCount placeholder="可选，最多两行" />
           </Form.Item>
-          {currentLessonType === LESSON_TYPE_MATERIAL_LIBRARY ? (
+          {currentLessonType === LESSON_TYPE_MATERIAL_LIBRARY || isSelfStudyV2LessonType ? (
             <Form.Item
               name="video_asset_id"
               label="自学素材"
               rules={[{ required: true, message: '素材自学课必须绑定素材' }]}
-              extra="绑定后保存会自动生成自学 ditto 快照；可随时在卡片上点「刷新 Ditto」更新"
+              extra={
+                isSelfStudyV2LessonType
+                  ? 'V2 课节视频信息以导入的 JSON 为准；此处绑定用于课节元数据与封面/时长'
+                  : '绑定后保存会自动生成自学 ditto 快照；可随时在卡片上点「刷新 Ditto」更新'
+              }
             >
               <Select
                 allowClear
@@ -1179,6 +1303,37 @@ export default function CourseDetailPage() {
         <Input.TextArea
           value={atbJsonText}
           onChange={(e) => setAtbJsonText(e.target.value)}
+          rows={20}
+          style={{ fontFamily: 'monospace', fontSize: 12 }}
+          spellCheck={false}
+        />
+      </Modal>
+
+      <Modal
+        title={selfStudyJsonLesson ? `自学课 V2 脚本 — ${selfStudyJsonLesson.title}` : '自学课 V2 脚本'}
+        open={selfStudyJsonModalOpen}
+        onCancel={() => {
+          setSelfStudyJsonModalOpen(false)
+          setSelfStudyJsonLesson(null)
+        }}
+        onOk={() => void submitSelfStudyJson()}
+        confirmLoading={selfStudyJsonSaving}
+        width={720}
+        destroyOnClose
+        okText="保存到课节"
+      >
+        <Paragraph type="secondary" style={{ marginTop: 0 }}>
+          从字幕打轴器导出 <Text code>ditto.self-study.v2</Text> JSON 后粘贴或导入。保存后将写入课节{' '}
+          <Text code>ditto_payload</Text>，Learner 端直接读取全量数据。
+        </Paragraph>
+        <Space style={{ marginBottom: 8 }}>
+          <Upload accept=".json,application/json" showUploadList={false} beforeUpload={handleSelfStudyJsonFileImport}>
+            <Button size="small">从文件导入 JSON</Button>
+          </Upload>
+        </Space>
+        <Input.TextArea
+          value={selfStudyJsonText}
+          onChange={(e) => setSelfStudyJsonText(e.target.value)}
           rows={20}
           style={{ fontFamily: 'monospace', fontSize: 12 }}
           spellCheck={false}

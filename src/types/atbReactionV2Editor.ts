@@ -17,8 +17,10 @@ import {
   DEFAULT_PLAY_VIDEO_STATUS_TITLE,
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+  DEFAULT_VOICE_QA_INSTRUCTION_HINT,
   DEFAULT_VOICE_QA_MAX_ATTEMPTS,
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+  DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
   isLectureWithPracticeActivity,
   isSubmergeSequenceActivity,
@@ -65,6 +67,10 @@ export function createEmptyDocument(): AtbReactionDocument {
 }
 
 export function newSrcId(): string {
+  return crypto.randomUUID()
+}
+
+export function newNodeId(): string {
   return crypto.randomUUID()
 }
 
@@ -163,6 +169,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return {
         type: 'voice_qa_simple',
         instruction_primary: DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
+        instruction_hint: DEFAULT_VOICE_QA_INSTRUCTION_HINT,
         hint_markdown: '',
         question_en: '',
         question_zh: '',
@@ -178,6 +185,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return {
         type: 'guided_speaking',
         instruction_primary: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
+        instruction_hint: DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
         task_description: '',
         expression_goals: [''],
         initial_hint_markdown: '',
@@ -193,7 +201,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
   }
 }
 
-export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   if (activityType === 'submerge_sequence') {
     return {
       id: nodeId,
@@ -233,7 +241,7 @@ export function isGuidedSpeakingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'guided_speaking')
 }
 
-export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -243,7 +251,7 @@ export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number): Sce
   }
 }
 
-export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -254,7 +262,7 @@ export function createSingleChoiceNode(src: AtbSrcAsset[], nodeId: number): Scen
   }
 }
 
-export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -265,7 +273,7 @@ export function createVoiceQaSimpleNode(src: AtbSrcAsset[], nodeId: number): Sce
   }
 }
 
-export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -276,7 +284,7 @@ export function createGuidedSpeakingNode(src: AtbSrcAsset[], nodeId: number): Sc
   }
 }
 
-export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number): SceneNode {
+export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
   return {
     id: nodeId,
     components: [
@@ -297,7 +305,7 @@ export function createSubmergeActivity(id: number, src: AtbSrcAsset[]): Submerge
     common_layout: 'single_image_text',
     description: '',
     end_signal: endSignal,
-    nodes: [createDefaultNode('submerge_sequence', src, 1)],
+    nodes: [createDefaultNode('submerge_sequence', src, newNodeId())],
   }
 }
 
@@ -309,7 +317,7 @@ export function createLectureActivity(id: number, src: AtbSrcAsset[]): LectureWi
     layout: 'react_teaching_with_practice',
     description: '',
     video_source_id: video?.id ?? '',
-    nodes: [createDefaultNode('lecture_with_practice', src, 1)],
+    nodes: [createDefaultNode('lecture_with_practice', src, newNodeId())],
   }
 }
 
