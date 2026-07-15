@@ -1,0 +1,291 @@
+{
+  "version": "0.1.8-scenario-coach",
+  "lesson_title": "ScenarioCoach Examples",
+  "lesson_section": "沉浸式场景应对训练",
+  "default_subtitle_mode": "on",
+  "src": [
+    {
+      "id": "eva-avatar",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/d1b8b2ea-57dc-4737-9d8b-1015e6596dd0.png",
+      "type": "image",
+      "description": "Eva 头像"
+    },
+    {
+      "id": "mentor-avatar",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/d33a82c5-ff94-41e3-87d7-ba15bf2cae9e.jpeg",
+      "type": "image",
+      "description": "杨天真老师头像占位"
+    },
+    {
+      "id": "museum-scenario-video",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/a619c552-a223-4d61-aaf4-7e9b5e5e5dbc.mp4",
+      "type": "video",
+      "description": "博物馆文创店场景视频占位"
+    },
+    {
+      "id": "office-scenario-image",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/d33a82c5-ff94-41e3-87d7-ba15bf2cae9e.jpeg",
+      "type": "image",
+      "description": "办公室沟通场景图占位"
+    },
+    {
+      "id": "office-boss-audio",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/8bf9542f-6ee3-45e7-95b5-cdba1b7477ef.mp3",
+      "type": "audio",
+      "description": "老板提问音频占位"
+    },
+    {
+      "id": "coach-speech-audio",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/07ec119f-d85f-4179-adcd-148d3994a51b.mp3",
+      "type": "audio",
+      "description": "老师支招音频占位"
+    },
+    {
+      "id": "whiteboard-image",
+      "url": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/d1b8b2ea-57dc-4737-9d8b-1015e6596dd0.png",
+      "type": "image",
+      "description": "白板图片占位"
+    }
+  ],
+  "activities": [
+    {
+      "id": "scenario-english-shu-embroidery",
+      "type": "scenario_coach",
+      "layout": "immersive_scenario_coach",
+      "description": "英语课 · 博物馆蜀绣讲解",
+      "coach_name": "Eva",
+      "progress_label": "对话进度",
+      "nodes": [
+        {
+          "id": "en-narrative-001",
+          "node_type": "narrative",
+          "components": [
+            {
+              "type": "narrative_video",
+              "source_id": "museum-scenario-video",
+              "start_ms": 0,
+              "end_ms": 6000,
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 2800,
+                  "text": "今天你和 Eva 一起逛博物馆文创店。",
+                  "translation_zh": "场景：帮外国游客介绍蜀绣。"
+                },
+                {
+                  "start_ms": 3000,
+                  "end_ms": 5800,
+                  "text": "你的目标是说明它是什么、来自哪里、为什么珍贵。"
+                }
+              ],
+              "autoplay": true
+            },
+            {
+              "type": "speech",
+              "audio": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/07ec119f-d85f-4179-adcd-148d3994a51b.mp3",
+              "audio_duration": 6,
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 6000,
+                  "text": "等一下如果卡住，你可以先问我。我会给你一个可以照着说的提示板。"
+                }
+              ]
+            },
+            {
+              "type": "whiteboard",
+              "source_id": "whiteboard-image",
+              "img_width": 1024,
+              "img_height": 1024
+            }
+          ]
+        },
+        {
+          "id": "en-scenario-001",
+          "node_type": "scenario_coach",
+          "metadata": {
+            "rewind_enabled": false
+          },
+          "components": [
+            {
+              "type": "scenario_video",
+              "visual_source_id": "museum-scenario-video",
+              "start_ms": 0,
+              "end_ms": 5000,
+              "pause_at_ms": 2500,
+              "prompt_text": "Can you do me a favor?",
+              "confused_prompt_text": "Sorry? I didn't quite get that.",
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 2500,
+                  "text": "Can you do me a favor?",
+                  "translation_zh": "你能帮我个忙吗？"
+                },
+                {
+                  "start_ms": 2600,
+                  "end_ms": 5000,
+                  "text": "What is this? It looks beautiful.",
+                  "translation_zh": "这是什么？看起来很漂亮。"
+                }
+              ],
+              "autoplay": true
+            },
+            {
+              "type": "foreigner_prompt",
+              "foreigner_line_en": "Can you do me a favor?",
+              "foreigner_line_zh": "你能帮我个忙吗？",
+              "teaching_objective": "用英语礼貌回应对方的请求",
+              "acceptable_answers": [
+                "Sure.",
+                "Of course.",
+                "What do you need?"
+              ],
+              "model_answer_en": "Sure. What do you need?",
+              "model_answer_zh": "当然，你需要什么？",
+              "rubric_lines": [
+                "需表达愿意帮忙",
+                "Chinglish 但可懂可通过"
+              ],
+              "asr_language": "en-US",
+              "max_attempts": 2,
+              "confused_tts_voice_id": "English_magnetic_voiced_man"
+            },
+            {
+              "type": "eva_coach",
+              "avatar_source_id": "eva-avatar",
+              "ask_intro_text": "Eva：没关系，我先给你一句可以照着说的英文。",
+              "retry_coach_text": "Eva：你其实可以这么说：",
+              "hint_board": {
+                "title": "提示板",
+                "lines": [
+                  "This is Shu embroidery.",
+                  "It is a traditional craft from Sichuan.",
+                  "It takes great skill and time to make.",
+                  "That is why it is precious."
+                ],
+                "model_sentence": "This is Shu embroidery."
+              },
+              "initially_open": true,
+              "tts_voice_id": "ZxueliLLS"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scenario-eq-boss-update",
+      "type": "scenario_coach",
+      "layout": "immersive_scenario_coach",
+      "description": "情商课 · 和老板解释项目延期",
+      "coach_name": "杨天真老师",
+      "progress_label": "沟通进度",
+      "nodes": [
+        {
+          "id": "eq-narrative-001",
+          "node_type": "narrative",
+          "components": [
+            {
+              "type": "narrative_video",
+              "source_id": "museum-scenario-video",
+              "start_ms": 0,
+              "end_ms": 5000,
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 2500,
+                  "text": "你正在和老板同步一个延期的方案。"
+                },
+                {
+                  "start_ms": 2600,
+                  "end_ms": 5000,
+                  "text": "目标：不甩锅，同时把推进动作说清楚。"
+                }
+              ],
+              "autoplay": true
+            },
+            {
+              "type": "speech",
+              "audio": "https://ditto-bucket.oss-cn-shanghai.aliyuncs.com/assets/tts/07ec119f-d85f-4179-adcd-148d3994a51b.mp3",
+              "audio_duration": 5,
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 5000,
+                  "text": "如果你说成“都是其他部门不配合”，老板会先听到推卸责任。我们练一个更稳的说法。"
+                }
+              ]
+            },
+            {
+              "type": "whiteboard",
+              "source_id": "whiteboard-image",
+              "img_width": 1024,
+              "img_height": 1024
+            }
+          ]
+        },
+        {
+          "id": "eq-scenario-001",
+          "node_type": "scenario_coach",
+          "metadata": {
+            "rewind_enabled": true
+          },
+          "components": [
+            {
+              "type": "scenario_video",
+              "visual_source_id": "office-scenario-image",
+              "audio_source_id": "office-boss-audio",
+              "pause_at_ms": 3200,
+              "prompt_text": "这个方案为什么现在还没推进？",
+              "confused_prompt_text": "我没太听明白，你能再说清楚一点吗？",
+              "subtitles": [
+                {
+                  "start_ms": 0,
+                  "end_ms": 3200,
+                  "text": "这个方案为什么现在还没推进？"
+                }
+              ],
+              "autoplay": true
+            },
+            {
+              "type": "foreigner_prompt",
+              "foreigner_line_en": "Why hasn't this plan moved forward yet?",
+              "foreigner_line_zh": "这个方案为什么现在还没推进？",
+              "teaching_objective": "不甩锅，同时把推进动作说清楚",
+              "acceptable_answers": [
+                "We are waiting on cross-team confirmation.",
+                "I will sync with the key owners today."
+              ],
+              "model_answer_en": "It is currently blocked on cross-team confirmation. I will sync with the key owners today and push the timeline forward.",
+              "model_answer_zh": "目前卡在跨部门确认上，我会今天同步关键负责人，把节点往前推。",
+              "rubric_lines": [
+                "先承担推进责任，再说卡点和下一步",
+                "避免直接甩锅给其他部门"
+              ],
+              "asr_language": "en-US",
+              "max_attempts": 2,
+              "confused_tts_voice_id": "ZxueliLLS"
+            },
+            {
+              "type": "eva_coach",
+              "avatar_source_id": "mentor-avatar",
+              "ask_intro_text": "杨天真老师：这句容易像甩锅，先承担推进责任，再说卡点和下一步。",
+              "retry_coach_text": "杨天真老师：你可以这么说：",
+              "hint_board": {
+                "title": "盘外招",
+                "lines": [
+                  "这个项目目前卡在跨部门确认上。",
+                  "我会先把能推进的部分整理出来。",
+                  "今天同步关键负责人，把节点往前推。"
+                ],
+                "model_sentence": "It is currently blocked on cross-team confirmation."
+              },
+              "initially_open": true,
+              "tts_voice_id": "ZxueliLLS"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

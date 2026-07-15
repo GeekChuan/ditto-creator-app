@@ -48,6 +48,7 @@ import {
   normalizeStoredSubtitleSegments,
 } from '../components/subtitle-timing/normalizeSegments'
 import { buildSelfStudyV2Export } from '../components/subtitle-timing/buildSelfStudyExport'
+import { buildDirectorPrepScript } from '../components/subtitle-timing/buildDirectorPrepScript'
 import type { VideoSubtitleSegment } from '../types/atbReactionV2'
 
 const { Title, Text, Paragraph } = Typography
@@ -83,24 +84,6 @@ function buildTranscriptLines(
     .filter((line): line is string => Boolean(line))
 }
 
-function buildDirectorPrepScript(segments: VideoSubtitleSegment[]): string {
-  return [...segments]
-    .sort((a, b) => a.start_ms - b.start_ms)
-    .map((seg) => ({
-      text: seg.text.trim(),
-      timeRange: `${formatMs(seg.start_ms)} - ${formatMs(seg.end_ms)}`,
-      prepNote: seg.prep_note?.trim() || '',
-    }))
-    .filter((item) => item.text)
-    .map((item, index) => [
-      `序号：${index + 1}`,
-      `原稿：${item.text}`,
-      `时间戳：${item.timeRange}`,
-      `备课备注：${item.prepNote}`,
-    ].join('\n'))
-    .join('\n\n')
-}
-
 function downloadTextFile(filename: string, content: string) {
   const blob = new Blob([content], { type: filename.endsWith('.json') ? 'application/json;charset=utf-8' : 'text/plain;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -123,6 +106,7 @@ function buildSegmentPayload(segments: VideoSubtitleSegment[]) {
       prep_words: seg.prep_words?.length ? seg.prep_words : undefined,
       prep_phrases: serializePrepPhrasesForApi(seg.prep_phrases),
       prep_expressions: serializePrepExpressionsForApi(seg.prep_expressions),
+      spoken_language: seg.spoken_language === 'zh' ? 'zh' : seg.spoken_language === 'en' ? 'en' : undefined,
     }))
     .filter((seg) => seg.text)
 }
@@ -646,7 +630,7 @@ export default function SubtitleTimingPage() {
       title: '重新打轴',
       content:
         '将把当前字幕段中的英文文本按顺序拼合，调用火山引擎字幕打轴 API 重新生成时间轴。'
-        + '打轴结果会直接保存；若分句变化，仅文本完全匹配的中文翻译、备课备注与备课知识会保留。',
+        + '打轴结果会直接保存；若分句变化，仅文本完全匹配的中文翻译、博主语种、备课备注与备课知识会保留。',
       okText: '开始打轴',
       cancelText: '取消',
       onOk: async () => {

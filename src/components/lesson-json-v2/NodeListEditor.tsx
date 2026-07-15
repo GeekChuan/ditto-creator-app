@@ -6,7 +6,9 @@ import {
   createDefaultComponent,
   createDefaultNode,
   createFollowReadingNode,
+  createNarrativeNode,
   createPlayVideoNode,
+  createScenarioCoachNode,
   createSingleChoiceNode,
   createVoiceQaSimpleNode,
   createGuidedSpeakingNode,
@@ -15,10 +17,16 @@ import {
   isSingleChoiceNode,
   isVoiceQaSimpleNode,
   isGuidedSpeakingNode,
+  isNarrativeNode,
+  isScenarioCoachNode,
   moveItem,
   newNodeId,
 } from '../../types/atbReactionV2Editor'
-import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from '../../types/atbReactionV2'
+import {
+  isLectureWithPracticeActivity,
+  isScenarioCoachActivity,
+  isSubmergeSequenceActivity,
+} from '../../types/atbReactionV2'
 import type { SelectionPath } from '../../types/atbReactionV2Editor'
 
 const { Text } = Typography
@@ -85,6 +93,14 @@ export default function NodeListEditor({
     updateNodes([...activity.nodes, createGuidedSpeakingNode(src, newNodeId())])
   }
 
+  const addNarrativeNode = () => {
+    updateNodes([...activity.nodes, createNarrativeNode(src, newNodeId())])
+  }
+
+  const addScenarioCoachNode = () => {
+    updateNodes([...activity.nodes, createScenarioCoachNode(src, newNodeId())])
+  }
+
   const nodeColumns: ColumnsType<SceneNode> = [
     {
       title: 'id',
@@ -100,6 +116,8 @@ export default function NodeListEditor({
         if (isSingleChoiceNode(node)) return `singleChoice · ${types}`
         if (isVoiceQaSimpleNode(node)) return `voiceQa · ${types}`
         if (isGuidedSpeakingNode(node)) return `guidedSpeaking · ${types}`
+        if (isNarrativeNode(node)) return `narrative · ${types}`
+        if (isScenarioCoachNode(node)) return `scenarioCoach · ${types}`
         return types
       },
     },
@@ -182,6 +200,16 @@ export default function NodeListEditor({
             </Button>
             <Button size="small" onClick={addGuidedSpeakingNode}>
               添加引导口语节点
+            </Button>
+          </>
+        ) : null}
+        {isScenarioCoachActivity(activity) ? (
+          <>
+            <Button size="small" onClick={addNarrativeNode}>
+              添加 NarrativeNode
+            </Button>
+            <Button size="small" onClick={addScenarioCoachNode}>
+              添加 ScenarioCoachNode
             </Button>
           </>
         ) : null}

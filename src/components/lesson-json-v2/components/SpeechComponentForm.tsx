@@ -16,6 +16,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { assetsApi } from '../../../api/assets'
 import { toolsApi } from '../../../api/tools'
 import type { SpeechComponent, SubtitleCue } from '../../../types/atbReactionV2'
+import AudioPlayerModal from '../../AudioPlayerModal'
 import MediaOssUploadField from '../MediaOssUploadField'
 import { mapForcedAlignSegments, resolvePlayableAudioUrl } from '../lib/subtitleAlign'
 
@@ -35,17 +36,24 @@ function subtitlesToSourceText(subtitles: SubtitleCue[]): string {
 }
 
 export default function SpeechComponentForm({ value, onChange }: Props) {
-  const [sourceText, setSourceText] = useState(() => subtitlesToSourceText(value.subtitles))
+  // 优先用持久化的 source_text（含标点）；旧数据没有该字段时才从 subtitles 拼回（无标点）
+  const [sourceText, setSourceText] = useState(
+    () => value.source_text?.trim() || subtitlesToSourceText(value.subtitles),
+  )
   const [voiceId, setVoiceId] = useState(DEFAULT_MINIMAX_VOICE_ID)
   const [ttsLoading, setTtsLoading] = useState(false)
   const [alignLoading, setAlignLoading] = useState(false)
   const [autoAlignAfterTts, setAutoAlignAfterTts] = useState(true)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
 
   useEffect(() => {
-    if (!sourceText.trim() && value.subtitles.length) {
-      setSourceText(subtitlesToSourceText(value.subtitles))
+    if (!sourceText.trim()) {
+      const fallback = value.source_text?.trim() || subtitlesToSourceText(value.subtitles)
+      if (fallback) setSourceText(fallback)
     }
-  }, [value.subtitles, sourceText])
+  }, [value.source_text, value.subtitles, sourceText])
 
   const updateSubtitle = (index: number, patch: Partial<SubtitleCue>) => {
     onChange({
@@ -87,6 +95,7 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
       onChange({
         ...value,
         audio: audioUrl,
+        source_text: script,
         subtitles,
         audio_duration: Math.max(
           value.audio_duration,
@@ -98,6 +107,29 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
       message.error(e instanceof Error ? e.message : '字幕打轴失败')
     } finally {
       setAlignLoading(false)
+    }
+  }
+
+  const openAudioPreview = async () => {
+    const rawUrl = value.audio?.trim()
+    if (!rawUrl) {
+      message.warning('请先通过 TTS 生成或填写音频 URL')
+      return
+    }
+    setPreviewLoading(true)
+    try {
+      // 私有桶资源不能直接播放，先换取签名播放 URL
+      const { play_url } = await assetsApi.getPlaybackUrl({
+        file_url: rawUrl,
+        expires: 1800,
+        nonce: Date.now(),
+      })
+      setPreviewUrl(play_url)
+      setPreviewOpen(true)
+    } catch {
+      message.error('获取音频播放地址失败，请稍后重试')
+    } finally {
+      setPreviewLoading(false)
     }
   }
 
@@ -118,6 +150,7 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
         ...value,
         audio: res.audio_url,
         audio_duration: res.audio_duration ?? value.audio_duration,
+        source_text: text,
       }
       onChange(next)
       message.success('TTS 音频已生成')
@@ -242,7 +275,11 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
         <TextArea
           rows={5}
           value={sourceText}
-          onChange={(e) => setSourceText(e.target.value)}
+          onChange={(e) => {
+            setSourceText(e.target.value)
+            // 持久化含标点的原文，避免打轴后从无标点的 subtitles 反推导致标点丢失
+            onChange({ ...value, source_text: e.target.value })
+          }}
           placeholder="输入完整讲解稿，将作为 TTS 输入与打轴对照文本"
         />
       </Form.Item>
@@ -267,6 +304,14 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
         />
         <Button size="small" loading={ttsLoading} onClick={() => void runTts()}>
           Minimax TTS 生成音频
+        </Button>
+        <Button
+          size="small"
+          loading={previewLoading}
+          disabled={!value.audio?.trim()}
+          onClick={() => void openAudioPreview()}
+        >
+          预览音频
         </Button>
         <Checkbox checked={autoAlignAfterTts} onChange={(e) => setAutoAlignAfterTts(e.target.checked)}>
           TTS 后自动打轴
@@ -319,6 +364,13 @@ export default function SpeechComponentForm({ value, onChange }: Props) {
         columns={columns}
         scroll={{ x: 680 }}
         locale={{ emptyText: '完成打轴后将在此显示字幕时间轴' }}
+      />
+
+      <AudioPlayerModal
+        open={previewOpen}
+        url={previewUrl}
+        title="TTS 音频预览"
+        onClose={() => setPreviewOpen(false)}
       />
     </Form>
   )

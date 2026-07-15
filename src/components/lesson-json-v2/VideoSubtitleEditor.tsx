@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Input, InputNumber, Space, Table, Tag, Typography } from 'antd'
+import { Button, Input, InputNumber, Segmented, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { VideoSubtitleSegment } from '../../types/atbReactionV2'
+import type { SubtitleSpokenLanguage, VideoSubtitleSegment } from '../../types/atbReactionV2'
+import { formatSpokenLanguageLabel } from '../subtitle-timing/buildDirectorPrepScript'
 import {
   formatPrepExpressionsDraft,
   formatPrepPhrasesDraft,
@@ -285,6 +286,12 @@ export default function VideoSubtitleEditor({
                   {!prepMode && seg.prep_note?.trim() ? (
                     <Tag color="gold" style={{ margin: 0 }}>有备注</Tag>
                   ) : null}
+                  <Tag
+                    color={seg.spoken_language === 'zh' ? 'orange' : 'cyan'}
+                    style={{ margin: 0 }}
+                  >
+                    {formatSpokenLanguageLabel(seg.spoken_language)}
+                  </Tag>
                   {!prepMode && hasPrepKnowledge(seg) ? (
                     <Tag color="blue" style={{ margin: 0 }}>有备课知识</Tag>
                   ) : null}
@@ -318,6 +325,17 @@ export default function VideoSubtitleEditor({
                   >
                     删
                   </Button>
+                  <Segmented
+                    size="small"
+                    value={seg.spoken_language ?? 'en'}
+                    disabled={disabled}
+                    options={[
+                      { label: '英文讲', value: 'en' },
+                      { label: '中文讲', value: 'zh' },
+                    ]}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(value) => updateRow(index, { spoken_language: value as SubtitleSpokenLanguage })}
+                  />
                 </Space>
                 <TextArea
                   value={seg.text}

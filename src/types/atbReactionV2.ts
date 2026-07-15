@@ -36,6 +36,9 @@ export interface PrepExpression {
   explanation?: string
 }
 
+/** 博主在该句实际使用的口语语种（字幕打轴器标记） */
+export type SubtitleSpokenLanguage = 'en' | 'zh'
+
 export interface VideoSubtitleSegment {
   start_ms: number
   end_ms: number
@@ -50,6 +53,8 @@ export interface VideoSubtitleSegment {
   prep_phrases?: PrepPhrase[]
   /** 备课句型/表达（同步到元数据重点表达） */
   prep_expressions?: PrepExpression[]
+  /** 博主本句口语语种，默认按英文讲处理 */
+  spoken_language?: SubtitleSpokenLanguage
   words?: SubtitleWord[]
 }
 
@@ -79,6 +84,11 @@ export interface SpeechComponent {
   subtitles: SubtitleCue[]
   audio: string
   audio_duration: number
+  /**
+   * 创作侧留存的 speech 原文（含标点）。打轴返回的 subtitles 文本会丢失标点，
+   * 留存原文可保证重新 TTS 时不需要重新标点。学员端不消费该字段。
+   */
+  source_text?: string
 }
 
 export interface ButtonComponent {
@@ -120,6 +130,83 @@ export interface VideoPlayComponent {
   playback_rate?: number
   subtitle_override?: SubtitleMode
   autoplay?: boolean
+}
+
+export interface NarrativeVideoComponent {
+  type: 'narrative_video'
+  /** 引用 src 中 type=video 的竖屏讲解视频 */
+  source_id: string
+  start_ms?: number
+  end_ms?: number
+  subtitles?: SubtitleCue[]
+  autoplay?: boolean
+}
+
+export interface ScenarioVideoComponent {
+  type: 'scenario_video'
+  /** 引用 src 中 type=video 或 type=image 的场景素材 */
+  visual_source_id: string
+  /** 当 visual_source_id 为 image 时，可用独立音频承载场景台词 */
+  audio_source_id?: string
+  start_ms?: number
+  end_ms?: number
+  /** 老外台词播完后定帧暂停的位置（毫秒）；未填、0 或 -1 表示停在 end_ms 或视频结尾 */
+  pause_at_ms?: number
+  subtitles?: SubtitleCue[]
+  prompt_text?: string
+  autoplay?: boolean
+  /** 判题失败时老外的困惑台词（气泡），同时用于 TTS 合成 */
+  confused_prompt_text?: string
+  /** @deprecated 困惑音频改走 TTS 合成，见 foreigner_prompt.confused_tts_voice_id */
+  confused_audio_source_id?: string
+}
+
+export interface ForeignerPromptComponent {
+  type: 'foreigner_prompt'
+  foreigner_line_en: string
+  foreigner_line_zh?: string
+  teaching_objective: string
+  acceptable_answers: string[]
+  model_answer_en: string
+  model_answer_zh?: string
+  rubric_lines?: string[]
+  asr_language?: string
+  max_attempts?: number
+  /** 判题失败时困惑台词 TTS 音色（Minimax voice_id） */
+  confused_tts_voice_id?: string
+}
+
+export interface EvaCoachHintBoard {
+  title?: string
+  lines: string[]
+  model_sentence?: string
+}
+
+export interface EvaCoachComponent {
+  type: 'eva_coach'
+  avatar_source_id: string
+  /** 用户主动「问 Eva」时的中文开场 */
+  ask_intro_text?: string
+  /** 判题失败后的中文支招文案 */
+  retry_coach_text?: string
+  hint_board: EvaCoachHintBoard
+  initially_open?: boolean
+  tts_voice_id?: string
+}
+
+export interface HintBoardComponent {
+  type: 'hint_board'
+  title?: string
+  lines: string[]
+  initially_open?: boolean
+}
+
+export interface ScenarioCoachNodeMetadata {
+  rewind_enabled?: boolean
+  on_fail?: {
+    confused_prompt_text?: string
+    confused_audio_source_id?: string
+  }
 }
 
 export const DEFAULT_COUNTDOWN_SEC = 3
@@ -233,6 +320,11 @@ export type SceneComponent =
   | KnowledgeCardComponent
   | WhiteboardComponent
   | VideoPlayComponent
+  | NarrativeVideoComponent
+  | ScenarioVideoComponent
+  | ForeignerPromptComponent
+  | EvaCoachComponent
+  | HintBoardComponent
   | CountdownComponent
   | PlayVideoBriefComponent
   | FollowReadingComponent
@@ -245,8 +337,9 @@ export type SceneComponentType = SceneComponent['type']
 export interface SceneNode {
   /** Stable node UUID for progress checkpoints; number is kept for legacy imported scripts. */
   id: number | string
+  node_type?: 'narrative' | 'scenario_coach'
   components: SceneComponent[]
-  metadata?: Record<string, unknown>
+  metadata?: ScenarioCoachNodeMetadata & Record<string, unknown>
 }
 
 export interface SubmergeSequenceActivity {
@@ -261,14 +354,25 @@ export interface SubmergeSequenceActivity {
 export interface LectureWithPracticeActivity {
   id: number | string
   type: 'lecture_with_practice'
-  layout: 'react_teaching_with_practice'
+  layout: 'react_teaching_with_practice' | string
   description?: string
   video_source_id: string
   end_signal?: string
   nodes: SceneNode[]
 }
 
-export type AtbActivity = SubmergeSequenceActivity | LectureWithPracticeActivity
+export interface ScenarioCoachActivity {
+  id: number | string
+  type: 'scenario_coach'
+  layout: 'immersive_scenario_coach' | string
+  description?: string
+  coach_name: string
+  progress_label?: string
+  end_signal?: string
+  nodes: SceneNode[]
+}
+
+export type AtbActivity = SubmergeSequenceActivity | LectureWithPracticeActivity | ScenarioCoachActivity
 
 export type AtbActivityType = AtbActivity['type']
 
@@ -298,4 +402,10 @@ export function isLectureWithPracticeActivity(
   activity: AtbActivity,
 ): activity is LectureWithPracticeActivity {
   return activity.type === 'lecture_with_practice'
+}
+
+export function isScenarioCoachActivity(
+  activity: AtbActivity,
+): activity is ScenarioCoachActivity {
+  return activity.type === 'scenario_coach'
 }

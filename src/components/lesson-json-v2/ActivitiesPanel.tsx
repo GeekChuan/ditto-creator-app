@@ -116,6 +116,7 @@ export default function ActivitiesPanel({
           options={[
             { value: 'submerge_sequence', label: 'submerge_sequence' },
             { value: 'lecture_with_practice', label: 'lecture_with_practice' },
+            { value: 'scenario_coach', label: 'scenario_coach' },
           ]}
         />
         <Button

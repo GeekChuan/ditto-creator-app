@@ -23,6 +23,7 @@ import {
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
   isLectureWithPracticeActivity,
+  isScenarioCoachActivity,
   isSubmergeSequenceActivity,
 } from './atbReactionV2'
 
@@ -37,6 +38,11 @@ export const COMPONENT_TYPES = [
   'knowledge_card',
   'whiteboard',
   'video_play',
+  'narrative_video',
+  'scenario_video',
+  'foreigner_prompt',
+  'eva_coach',
+  'hint_board',
   'countdown',
   'kol_avatar',
   'play_video_brief',
@@ -102,6 +108,16 @@ export function defaultVideoSourceId(src: AtbSrcAsset[]): string {
   return video?.id ?? ''
 }
 
+export function defaultVisualSourceId(src: AtbSrcAsset[]): string {
+  const visual = src.find((s) => s.type === 'video') ?? src.find((s) => s.type === 'image')
+  return visual?.id ?? ''
+}
+
+export function defaultAudioSourceId(src: AtbSrcAsset[]): string {
+  const audio = src.find((s) => s.type === 'audio')
+  return audio?.id ?? ''
+}
+
 export function defaultKolAvatarSourceId(src: AtbSrcAsset[]): string {
   const kol = src.find((s) => s.type === 'image' && /kol/i.test(s.description ?? ''))
   if (kol) return kol.id
@@ -133,6 +149,63 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         end_ms: 0,
         playback_rate: 1,
         autoplay: true,
+      }
+    case 'narrative_video':
+      return {
+        type: 'narrative_video',
+        source_id: defaultVideoSourceId(src),
+        start_ms: 0,
+        end_ms: 0,
+        subtitles: [{ start_ms: 0, end_ms: 3000, text: '' }],
+        autoplay: true,
+      }
+    case 'scenario_video':
+      return {
+        type: 'scenario_video',
+        visual_source_id: defaultVisualSourceId(src),
+        audio_source_id: defaultAudioSourceId(src),
+        start_ms: 0,
+        end_ms: 0,
+        pause_at_ms: -1,
+        subtitles: [{ start_ms: 0, end_ms: 3000, text: '' }],
+        prompt_text: '',
+        confused_prompt_text: "Sorry? I didn't quite get that.",
+        autoplay: true,
+      }
+    case 'foreigner_prompt':
+      return {
+        type: 'foreigner_prompt',
+        foreigner_line_en: 'Can you do me a favor?',
+        foreigner_line_zh: '你能帮我个忙吗？',
+        teaching_objective: '用英语回应对方刚才说的话',
+        acceptable_answers: ['Sure.', 'Of course.', 'What do you need?'],
+        model_answer_en: 'Sure. What do you need?',
+        model_answer_zh: '当然，你需要什么？',
+        rubric_lines: ['老外能听懂即可，语法小错误可接受'],
+        asr_language: 'en-US',
+        max_attempts: DEFAULT_VOICE_QA_MAX_ATTEMPTS,
+        confused_tts_voice_id: 'English_magnetic_voiced_man',
+      }
+    case 'eva_coach':
+      return {
+        type: 'eva_coach',
+        avatar_source_id: defaultTeacherAvatarSourceId(src),
+        ask_intro_text: '没关系，我先给你一句可以照着说的英文。',
+        retry_coach_text: '你其实可以这么说：',
+        hint_board: {
+          title: '提示板',
+          lines: ['This is Shu embroidery.'],
+          model_sentence: 'This is Shu embroidery.',
+        },
+        initially_open: true,
+        tts_voice_id: 'ZxueliLLS',
+      }
+    case 'hint_board':
+      return {
+        type: 'hint_board',
+        title: '提示板',
+        lines: [''],
+        initially_open: true,
       }
     case 'countdown':
       return { type: 'countdown', duration_sec: DEFAULT_COUNTDOWN_SEC }
@@ -212,6 +285,9 @@ export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsse
       ],
     }
   }
+  if (activityType === 'scenario_coach') {
+    return createScenarioCoachNode(src, nodeId)
+  }
   return {
     id: nodeId,
     components: [
@@ -239,6 +315,14 @@ export function isVoiceQaSimpleNode(node: SceneNode): boolean {
 
 export function isGuidedSpeakingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'guided_speaking')
+}
+
+export function isNarrativeNode(node: SceneNode): boolean {
+  return node.node_type === 'narrative' || node.components.some((c) => c.type === 'narrative_video')
+}
+
+export function isScenarioCoachNode(node: SceneNode): boolean {
+  return node.node_type === 'scenario_coach' || node.components.some((c) => c.type === 'scenario_video')
 }
 
 export function createFollowReadingNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
@@ -297,6 +381,30 @@ export function createPlayVideoNode(src: AtbSrcAsset[], nodeId: number | string)
   }
 }
 
+export function createNarrativeNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
+  return {
+    id: nodeId,
+    node_type: 'narrative',
+    components: [
+      createDefaultComponent('narrative_video', src),
+      createDefaultComponent('speech', src),
+      createDefaultComponent('whiteboard', src),
+    ],
+  }
+}
+
+export function createScenarioCoachNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
+  return {
+    id: nodeId,
+    node_type: 'scenario_coach',
+    components: [
+      createDefaultComponent('scenario_video', src),
+      createDefaultComponent('foreigner_prompt', src),
+      createDefaultComponent('eva_coach', src),
+    ],
+  }
+}
+
 export function createSubmergeActivity(id: number, src: AtbSrcAsset[]): SubmergeSequenceActivity {
   const endSignal = suggestEndSignal(id)
   return {
@@ -321,10 +429,25 @@ export function createLectureActivity(id: number, src: AtbSrcAsset[]): LectureWi
   }
 }
 
+export function createScenarioCoachActivity(id: number, src: AtbSrcAsset[]): AtbActivity {
+  return {
+    id,
+    type: 'scenario_coach',
+    layout: 'immersive_scenario_coach',
+    description: '',
+    coach_name: 'Eva',
+    progress_label: '对话进度',
+    nodes: [
+      createNarrativeNode(src, newNodeId()),
+      createScenarioCoachNode(src, newNodeId()),
+    ],
+  }
+}
+
 export function createActivity(type: AtbActivityType, id: number, src: AtbSrcAsset[]): AtbActivity {
-  return type === 'submerge_sequence'
-    ? createSubmergeActivity(id, src)
-    : createLectureActivity(id, src)
+  if (type === 'submerge_sequence') return createSubmergeActivity(id, src)
+  if (type === 'scenario_coach') return createScenarioCoachActivity(id, src)
+  return createLectureActivity(id, src)
 }
 
 function migrateLegacyVideoSubtitle(doc: AtbReactionDocument): AtbReactionDocument {
@@ -410,6 +533,15 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       }
     }
 
+    if (isScenarioCoachActivity(activity)) {
+      if (activity.layout !== 'immersive_scenario_coach') {
+        errors.push(`activities[${ai}].layout 须为 immersive_scenario_coach`)
+      }
+      if (!activity.coach_name?.trim()) {
+        errors.push(`activities[${ai}].coach_name 不能为空`)
+      }
+    }
+
     for (const [ni, node] of activity.nodes.entries()) {
       if (!node.components?.length) {
         errors.push(`activities[${ai}].nodes[${ni}] 至少包含 1 个 component`)
@@ -445,6 +577,72 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
           }
           if (comp.start_ms >= comp.end_ms) {
             errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] video_play start_ms 须小于 end_ms`)
+          }
+        }
+        if (comp.type === 'narrative_video') {
+          if (!comp.source_id?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] narrative_video 缺少 source_id`)
+          } else {
+            const asset = doc.src.find((s) => s.id === comp.source_id)
+            if (!asset) {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] narrative_video source_id 未在 src 中找到`)
+            } else if (asset.type !== 'video') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] narrative_video source_id 须引用 type=video 的资源`)
+            }
+          }
+          if ((comp.start_ms ?? 0) > 0 && (comp.end_ms ?? 0) > 0 && (comp.start_ms ?? 0) >= (comp.end_ms ?? 0)) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] narrative_video start_ms 须小于 end_ms`)
+          }
+        }
+        if (comp.type === 'scenario_video') {
+          if (!comp.visual_source_id?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video 缺少 visual_source_id`)
+          } else {
+            const visualAsset = doc.src.find((s) => s.id === comp.visual_source_id)
+            if (!visualAsset) {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video visual_source_id 未在 src 中找到`)
+            } else if (visualAsset.type !== 'video' && visualAsset.type !== 'image') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video visual_source_id 须引用 type=video 或 type=image 的资源`)
+            }
+          }
+          if (comp.audio_source_id) {
+            const audioAsset = doc.src.find((s) => s.id === comp.audio_source_id)
+            if (!audioAsset) {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video audio_source_id 未在 src 中找到`)
+            } else if (audioAsset.type !== 'audio') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video audio_source_id 须引用 type=audio 的资源`)
+            }
+          }
+          if ((comp.start_ms ?? 0) > 0 && (comp.end_ms ?? 0) > 0 && (comp.start_ms ?? 0) >= (comp.end_ms ?? 0)) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] scenario_video start_ms 须小于 end_ms`)
+          }
+        }
+        if (comp.type === 'foreigner_prompt') {
+          if (!comp.foreigner_line_en?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] foreigner_prompt 缺少 foreigner_line_en`)
+          }
+          if (!comp.teaching_objective?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] foreigner_prompt 缺少 teaching_objective`)
+          }
+          if (!comp.model_answer_en?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] foreigner_prompt 缺少 model_answer_en`)
+          }
+        }
+        if (comp.type === 'eva_coach') {
+          if (!comp.avatar_source_id?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] eva_coach 缺少 avatar_source_id`)
+          } else if (!srcIds.has(comp.avatar_source_id)) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] eva_coach avatar_source_id 未在 src 中找到`)
+          }
+          const lines = (comp.hint_board?.lines ?? []).filter((line) => line?.trim())
+          if (lines.length < 1) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] eva_coach.hint_board 至少需要 1 行提示`)
+          }
+        }
+        if (comp.type === 'hint_board') {
+          const lines = (comp.lines ?? []).filter((line) => line?.trim())
+          if (lines.length < 1) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] hint_board 至少需要 1 行提示`)
           }
         }
         if (comp.type === 'countdown') {

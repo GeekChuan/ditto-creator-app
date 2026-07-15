@@ -4,7 +4,7 @@ import {
   Typography, Card, Tag, Row, Col, Spin, Empty, Badge, Space, Tabs,
 } from 'antd'
 import {
-  AudioOutlined, FileTextOutlined, ArrowRightOutlined, ExperimentOutlined, RobotOutlined,
+  AudioOutlined, CloudOutlined, FileTextOutlined, ArrowRightOutlined, ExperimentOutlined, RobotOutlined,
 } from '@ant-design/icons'
 import { toolsApi, type ToolMeta } from '../api/tools'
 import { agentsApi, type AgentMeta } from '../api/agents'
@@ -14,6 +14,7 @@ const { Title, Text, Paragraph } = Typography
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '语音工具': <AudioOutlined />,
   '文本分析': <FileTextOutlined />,
+  '存储工具': <CloudOutlined />,
 }
 
 const STRATEGY_LABELS: Record<string, { label: string; color: string }> = {

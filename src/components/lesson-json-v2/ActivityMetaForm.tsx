@@ -1,6 +1,10 @@
 import { Form, Input } from 'antd'
 import type { AtbActivity } from '../../types/atbReactionV2'
-import { isLectureWithPracticeActivity, isSubmergeSequenceActivity } from '../../types/atbReactionV2'
+import {
+  isLectureWithPracticeActivity,
+  isScenarioCoachActivity,
+  isSubmergeSequenceActivity,
+} from '../../types/atbReactionV2'
 import SrcIdSelect from './SrcIdSelect'
 import type { AtbSrcAsset } from '../../types/atbReactionV2'
 
@@ -57,6 +61,32 @@ export default function ActivityMetaForm({ activity, src, onChange }: Props) {
               filterType="video"
               value={activity.video_source_id}
               onChange={(id) => onChange({ ...activity, video_source_id: id })}
+            />
+          </Form.Item>
+          <Form.Item label="end_signal">
+            <Input
+              value={activity.end_signal ?? ''}
+              onChange={(e) => onChange({ ...activity, end_signal: e.target.value })}
+            />
+          </Form.Item>
+        </>
+      ) : null}
+      {isScenarioCoachActivity(activity) ? (
+        <>
+          <Form.Item label="layout">
+            <Input value={activity.layout} disabled />
+          </Form.Item>
+          <Form.Item label="coach_name" required>
+            <Input
+              value={activity.coach_name}
+              onChange={(e) => onChange({ ...activity, coach_name: e.target.value })}
+            />
+          </Form.Item>
+          <Form.Item label="progress_label">
+            <Input
+              value={activity.progress_label ?? ''}
+              placeholder="对话进度"
+              onChange={(e) => onChange({ ...activity, progress_label: e.target.value })}
             />
           </Form.Item>
           <Form.Item label="end_signal">

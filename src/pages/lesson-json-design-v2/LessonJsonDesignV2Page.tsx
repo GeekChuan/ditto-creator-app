@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Alert, Card, Col, Row, Space, Steps, Typography, message } from 'antd'
+import { Alert, Button, Card, Col, Row, Space, Steps, Typography, message } from 'antd'
+import { ThunderboltOutlined } from '@ant-design/icons'
 import type { AtbActivity, AtbReactionDocument } from '../../types/atbReactionV2'
 import type { EditorStep, SelectionPath } from '../../types/atbReactionV2Editor'
 import { selectionLabel } from '../../types/atbReactionV2Editor'
 import ActivitiesPanel from '../../components/lesson-json-v2/ActivitiesPanel'
+import BatchVoiceCompletionModal from '../../components/lesson-json-v2/BatchVoiceCompletionModal'
 import AtbV2MobilePreviewPanel from '../../components/lesson-json-v2/AtbV2MobilePreviewPanel'
 import AtbV2StructuralPreview from '../../components/lesson-json-v2/AtbV2StructuralPreview'
 import DocumentOutlineTree from '../../components/lesson-json-v2/DocumentOutlineTree'
@@ -18,6 +20,7 @@ export default function LessonJsonDesignV2Page() {
   const { doc, setDoc, hydrated, resetDraft, importDocument } = useAtbV2Draft()
   const [step, setStep] = useState<EditorStep>(0)
   const [selection, setSelection] = useState<SelectionPath>({ kind: 'lesson' })
+  const [batchVoiceOpen, setBatchVoiceOpen] = useState(false)
 
   const patchDoc = useCallback((patch: Partial<AtbReactionDocument>) => {
     setDoc((prev) => ({ ...prev, ...patch }))
@@ -59,13 +62,22 @@ export default function LessonJsonDesignV2Page() {
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div>
-        <Title level={4} style={{ marginBottom: 4 }}>
-          课程 JSON 设计 V2
-        </Title>
-        <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          面向 ATB V2 格式（version / src / activities）。定稿后复制或下载 JSON，在移动端 dev 预览路由验证。
-        </Paragraph>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+        <div>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            课程 JSON 设计 V2
+          </Title>
+          <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+            面向 ATB V2 格式（version / src / activities）。定稿后复制或下载 JSON，在移动端 dev 预览路由验证。
+          </Paragraph>
+        </div>
+        <Button
+          type="primary"
+          icon={<ThunderboltOutlined />}
+          onClick={() => setBatchVoiceOpen(true)}
+        >
+          一键补全所有语音并打轴
+        </Button>
       </div>
 
       <Steps
@@ -130,6 +142,13 @@ export default function LessonJsonDesignV2Page() {
           </Space>
         </Col>
       </Row>
+
+      <BatchVoiceCompletionModal
+        open={batchVoiceOpen}
+        doc={doc}
+        onClose={() => setBatchVoiceOpen(false)}
+        onApply={(next) => setDoc(next)}
+      />
 
       <Alert
         type="info"

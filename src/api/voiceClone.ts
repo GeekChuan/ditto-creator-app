@@ -1,6 +1,7 @@
 import { getToken } from './authStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_V1 = '/api/v1'
 
 export interface VoiceCloneResult {
   voice_id: string
@@ -20,20 +21,6 @@ export interface VoiceCloneForm {
   prompt_audio?: File | null
 }
 
-function apiV1Path(path: string): string {
-  try {
-    const host = new URL(API_BASE_URL).hostname
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return `/api/v1${path}`
-    }
-  } catch {
-    if (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1')) {
-      return `/api/v1${path}`
-    }
-  }
-  return path
-}
-
 export async function createVoiceClone(form: VoiceCloneForm): Promise<VoiceCloneResult> {
   const body = new FormData()
   body.append('clone_audio', form.clone_audio)
@@ -46,7 +33,7 @@ export async function createVoiceClone(form: VoiceCloneForm): Promise<VoiceClone
   body.append('need_volume_normalization', String(Boolean(form.need_volume_normalization)))
 
   const token = getToken()
-  const response = await fetch(`${API_BASE_URL}${apiV1Path('/voice-clone')}`, {
+  const response = await fetch(`${API_BASE_URL}${API_V1}/voice-clone`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body,

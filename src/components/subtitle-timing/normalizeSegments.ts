@@ -1,4 +1,9 @@
-import type { PrepExpression, PrepPhrase, VideoSubtitleSegment } from '../../types/atbReactionV2'
+import type {
+  PrepExpression,
+  PrepPhrase,
+  SubtitleSpokenLanguage,
+  VideoSubtitleSegment,
+} from '../../types/atbReactionV2'
 
 /**
  * 统一时间单位为毫秒。
@@ -93,6 +98,10 @@ export function normalizeStoredSubtitleSegments(
     }
     if (Array.isArray(item.words)) {
       seg.words = item.words as VideoSubtitleSegment['words']
+    }
+    const spokenLanguage = item.spoken_language
+    if (spokenLanguage === 'en' || spokenLanguage === 'zh') {
+      seg.spoken_language = spokenLanguage as SubtitleSpokenLanguage
     }
     segments.push(seg)
   }
