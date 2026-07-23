@@ -12,6 +12,7 @@ import CoursesPage from '../pages/CoursesPage'
 import CourseDetailPage from '../pages/CourseDetailPage'
 import CreatorProfilePage from '../pages/CreatorProfilePage'
 import LearnerAdminPage from '../pages/LearnerAdminPage'
+import HomeworkReviewPage from '../pages/HomeworkReviewPage'
 import LessonJsonDesignPage from '../pages/LessonJsonDesignPage'
 import LessonJsonDesignV2Page from '../pages/lesson-json-design-v2/LessonJsonDesignV2Page'
 import CourseAgentStudioPage from '../pages/course-agent-studio/CourseAgentStudioPage'
@@ -44,6 +45,7 @@ export default function AppRouter() {
             <Route path="lesson-image-gen-v2" element={<LessonImageGenV2Page />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="learner-admin" element={<LearnerAdminPage />} />
+            <Route path="homework-review" element={<HomeworkReviewPage />} />
             <Route path="lesson-json-design" element={<LessonJsonDesignPage />} />
             <Route path="lesson-json-design-v2" element={<LessonJsonDesignV2Page />} />
             <Route path="tools" element={<ToolsPage />} />

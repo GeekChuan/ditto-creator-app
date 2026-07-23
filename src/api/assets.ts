@@ -351,6 +351,26 @@ export const assetsApi = {
     })
   },
 
+  /** TinyPNG 压缩（可选等比缩宽）后经后端转存 OSS */
+  compressUploadImage: async (
+    file: File,
+    maxWidth?: number,
+    onProgress?: (percent: number) => void,
+  ): Promise<{ public_url: string; object_key: string; original_bytes: number; output_bytes: number }> => {
+    const form = new FormData()
+    form.append('file', file)
+    if (maxWidth && maxWidth > 0) form.append('max_width', String(Math.round(maxWidth)))
+    return http.post('/api/v1/assets/images/compress-upload', form, {
+      timeout: 0,
+      onUploadProgress: (event) => {
+        if (!event.total) return
+        // 上传到后端只是全流程的前半段，压缩+转存 OSS 还在后面，进度封顶 70%
+        const percent = Math.min(70, Math.round((event.loaded / event.total) * 70))
+        onProgress?.(percent)
+      },
+    })
+  },
+
   /** 预签名直传 OSS，或经后端转存（本地默认后者，规避桶 CORS） */
   uploadFile: async (
     file: File,

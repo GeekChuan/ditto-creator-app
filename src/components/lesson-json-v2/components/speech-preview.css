@@ -1,0 +1,34 @@
+/* speech 字幕联动预览：当前播放到的字幕行高亮 */
+.speech-cue-row-active > td {
+  background: #e6f4ff !important;
+}
+
+.speech-preview-panel {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.speech-preview-caption {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  text-align: center;
+  min-height: 44px;
+}
+
+.speech-preview-caption-text {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.speech-preview-caption-translation {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 2px;
+}

@@ -5,6 +5,7 @@ import {
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
   DEFAULT_VOICE_QA_MAX_ATTEMPTS,
 } from '../../../types/atbReactionV2'
+import TtsVoiceSelect from './TtsVoiceSelect'
 
 interface Props {
   value: VoiceQaSimpleComponent
@@ -135,9 +136,11 @@ export default function VoiceQaSimpleComponentForm({ value, onChange }: Props) {
         />
       </Form.Item>
       <Form.Item label="tts_voice_id" help="AI 反馈 TTS 音色">
-        <Input
+        <TtsVoiceSelect
+          size="middle"
           value={value.tts_voice_id ?? 'ZxueliLLS'}
-          onChange={(e) => onChange({ ...value, tts_voice_id: e.target.value })}
+          onChange={(v) => onChange({ ...value, tts_voice_id: v })}
+          style={{ width: '100%' }}
         />
       </Form.Item>
     </Form>

@@ -59,8 +59,8 @@ describe('guided_speaking editor validation', () => {
     expect(errors.some((e) => e.includes('teaching_objective'))).toBe(true)
   })
 
-  it('warns when speech and guided_speaking coexist', () => {
+  it('speech + guided_speaking 属正常用法，不再提示', () => {
     const errors = validateDocument(baseDoc())
-    expect(errors.some((e) => e.includes('speech + guided_speaking'))).toBe(true)
+    expect(errors.some((e) => e.includes('speech + guided_speaking'))).toBe(false)
   })
 })

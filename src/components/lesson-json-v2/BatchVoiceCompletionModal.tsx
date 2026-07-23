@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Modal, Progress, Radio, Space, Typography } from 'antd'
+import { Alert, Button, Modal, Progress, Space, Typography } from 'antd'
 import { ThunderboltOutlined } from '@ant-design/icons'
 import { assetsApi } from '../../api/assets'
 import { toolsApi } from '../../api/tools'
@@ -10,16 +10,12 @@ import type {
   SpeechComponent,
   SubtitleCue,
 } from '../../types/atbReactionV2'
+import TtsVoiceSelect from './components/TtsVoiceSelect'
 import { mapForcedAlignSegments, resolvePlayableAudioUrl } from './lib/subtitleAlign'
+import { useTtsVoiceStore } from './lib/ttsVoiceStore'
 
 const { Text } = Typography
 
-/** Minimax 音色 ID 区分大小写 */
-const VOICE_OPTIONS = [
-  { value: 'DittoEva01', label: 'DittoEva01' },
-  { value: 'DittoEva03', label: 'DittoEva03' },
-  { value: 'ZxueliLLS', label: 'ZxueliLLS' },
-] as const
 
 type TaskKind =
   | 'speech'
@@ -295,7 +291,9 @@ interface Props {
 }
 
 export default function BatchVoiceCompletionModal({ open, doc, onClose, onApply }: Props) {
-  const [voiceId, setVoiceId] = useState<string>(VOICE_OPTIONS[0].value)
+  // 全局音色偏好：与各组件表单同步
+  const storeVoiceId = useTtsVoiceStore((s) => s.voiceId)
+  const setVoiceId = useTtsVoiceStore((s) => s.setVoiceId)
   const [running, setRunning] = useState(false)
   const [finished, setFinished] = useState(false)
   // 执行期间文档被逐步写回会触发重新扫描，任务总数须在启动时冻结
@@ -308,6 +306,7 @@ export default function BatchVoiceCompletionModal({ open, doc, onClose, onApply 
 
   const scan = useMemo(() => (open ? collectVoiceTasks(doc) : null), [open, doc])
   const totalTasks = scan?.tasks.length ?? 0
+  const voiceId = storeVoiceId.trim()
 
   useEffect(() => {
     if (open) {
@@ -332,7 +331,7 @@ export default function BatchVoiceCompletionModal({ open, doc, onClose, onApply 
   }
 
   const run = async () => {
-    if (!scan || !scan.tasks.length) return
+    if (!scan || !scan.tasks.length || !voiceId) return
     setRunning(true)
     setFinished(false)
     setRunTotal(scan.tasks.length)
@@ -456,7 +455,7 @@ export default function BatchVoiceCompletionModal({ open, doc, onClose, onApply 
             type="primary"
             icon={<ThunderboltOutlined />}
             loading={running}
-            disabled={!totalTasks}
+            disabled={!totalTasks || !voiceId}
             onClick={() => void run()}
           >
             {finished ? '重新执行' : '开始补全'}
@@ -479,14 +478,16 @@ export default function BatchVoiceCompletionModal({ open, doc, onClose, onApply 
           <Text strong style={{ display: 'block', marginBottom: 8 }}>
             选择语音音色
           </Text>
-          <Radio.Group
-            value={voiceId}
+          <TtsVoiceSelect
+            size="middle"
+            value={storeVoiceId}
+            onChange={setVoiceId}
             disabled={running}
-            onChange={(e) => setVoiceId(e.target.value as string)}
-            options={VOICE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-            optionType="button"
-            buttonStyle="solid"
+            style={{ width: 280 }}
           />
+          <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+            全局记忆，与各组件表单的音色同步
+          </Text>
         </div>
 
         <div>

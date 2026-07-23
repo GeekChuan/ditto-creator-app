@@ -5,6 +5,7 @@ import {
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
 } from '../../../types/atbReactionV2'
+import TtsVoiceSelect from './TtsVoiceSelect'
 
 interface Props {
   value: GuidedSpeakingComponent
@@ -107,11 +108,14 @@ export default function GuidedSpeakingComponentForm({ value, onChange }: Props) 
           onChange={(e) => onChange({ ...value, asr_language: e.target.value })}
         />
       </Form.Item>
-      <Form.Item label="tts_voice_id" help="动态反馈 TTS 音色">
-        <Input
+      <Form.Item label="tts_voice_id" help="动态反馈 TTS 音色，留空用运行时默认">
+        <TtsVoiceSelect
+          size="middle"
+          allowClear
           value={value.tts_voice_id ?? ''}
+          onChange={(v) => onChange({ ...value, tts_voice_id: v })}
+          style={{ width: '100%' }}
           placeholder="ZxueliLLS"
-          onChange={(e) => onChange({ ...value, tts_voice_id: e.target.value })}
         />
       </Form.Item>
     </Form>

@@ -1,65 +1,4 @@
 /* iPhone 14 Pro 逻辑分辨率 393 × 852 */
-.atb-v2-preview-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.32s ease;
-  z-index: 1000;
-}
-
-.atb-v2-preview-overlay.is-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.atb-v2-preview-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  z-index: 1001;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: min(380px, 100vw);
-  height: 100vh;
-  padding: 20px 16px 24px;
-  box-sizing: border-box;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  border-left: 1px solid #e2e8f0;
-  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.12);
-  transform: translate3d(100%, 0, 0);
-  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.atb-v2-preview-drawer.is-open {
-  transform: translate3d(0, 0, 0);
-}
-
-.atb-v2-preview-drawer-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.atb-v2-preview-drawer-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.atb-v2-preview-drawer-hint {
-  margin: 0;
-  font-size: 12px;
-  color: #64748b;
-  text-align: center;
-  line-height: 1.5;
-}
 
 /* 钛金属边框：细 bezel + 圆角机身 */
 .atb-v2-preview-phone {
@@ -179,13 +118,45 @@
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
 }
 
-.atb-v2-preview-drawer-actions {
-  width: 100%;
+/* 右栏常驻预览坞 */
+.atb-v2-preview-dock {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
+  min-height: 0;
 }
 
-.atb-v2-preview-trigger-card .ant-card-body {
-  padding: 14px 16px;
+.atb-v2-preview-dock-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.atb-v2-preview-dock-phone-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 坞内手机壳尺寸由 JS 按可用宽高计算，覆盖抽屉里的固定宽度 */
+.atb-v2-preview-dock .atb-v2-preview-phone {
+  max-height: none;
+}
+
+.atb-v2-preview-dock-idle {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  line-height: 1.8;
+  z-index: 1;
 }

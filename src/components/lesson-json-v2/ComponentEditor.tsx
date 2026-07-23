@@ -7,12 +7,17 @@ import type {
 } from '../../types/atbReactionV2'
 import { isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import ImageOssUploadField from '../ImageOssUploadField'
+import FollowReadingPreview from './FollowReadingPreview'
+import KnowledgeCardPreview from './KnowledgeCardPreview'
+import SingleChoicePreview from './SingleChoicePreview'
+import TeacherAvatarPreview from './TeacherAvatarPreview'
 import SrcIdSelect from './SrcIdSelect'
 import FollowReadingComponentForm from './components/FollowReadingComponentForm'
 import SingleChoiceComponentForm from './components/SingleChoiceComponentForm'
 import SpeechComponentForm from './components/SpeechComponentForm'
 import VoiceQaSimpleComponentForm from './components/VoiceQaSimpleComponentForm'
 import GuidedSpeakingComponentForm from './components/GuidedSpeakingComponentForm'
+import OralOutputComponentForm from './components/OralOutputComponentForm'
 
 interface Props {
   component: SceneComponent
@@ -69,22 +74,26 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
             <ImageOssUploadField
               value={component.img_url}
               onChange={(url) => onChange({ ...component, img_url: url })}
+              enableCompression
             />
           </Form.Item>
         </Form>
       )
     case 'teacher_avatar':
       return (
-        <Form layout="vertical" size="small">
-          <Form.Item label="source_id" required>
-            <SrcIdSelect
-              src={src}
-              filterType="image"
-              value={component.source_id}
-              onChange={(id) => onChange({ ...component, source_id: id })}
-            />
-          </Form.Item>
-        </Form>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <Form layout="vertical" size="small" style={{ flex: 1, minWidth: 280 }}>
+            <Form.Item label="source_id" required>
+              <SrcIdSelect
+                src={src}
+                filterType="image"
+                value={component.source_id}
+                onChange={(id) => onChange({ ...component, source_id: id })}
+              />
+            </Form.Item>
+          </Form>
+          <TeacherAvatarPreview component={component} src={src} />
+        </div>
       )
     case 'speech':
       return <SpeechComponentForm value={component} onChange={onChange} />
@@ -143,45 +152,48 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
       )
     case 'knowledge_card':
       return (
-        <Form layout="vertical" size="small">
-          <Form.Item label="tag">
-            <Input
-              value={component.tag ?? ''}
-              onChange={(e) => onChange({ ...component, tag: e.target.value })}
-            />
-          </Form.Item>
-          <Form.Item label="title" required>
-            <Input
-              value={component.title}
-              onChange={(e) => onChange({ ...component, title: e.target.value })}
-            />
-          </Form.Item>
-          <Form.Item label="content" required>
-            <Input.TextArea
-              rows={2}
-              value={component.content}
-              onChange={(e) => onChange({ ...component, content: e.target.value })}
-            />
-          </Form.Item>
-          <Form.Item label="collocations（每行一条）">
-            <Input.TextArea
-              rows={3}
-              value={(component.collocations ?? []).join('\n')}
-              onChange={(e) =>
-                onChange({
-                  ...component,
-                  collocations: multilineToLines(e.target.value),
-                })
-              }
-            />
-          </Form.Item>
-          <Form.Item label="illustration_url">
-            <ImageOssUploadField
-              value={component.illustration_url ?? ''}
-              onChange={(url) => onChange({ ...component, illustration_url: url })}
-            />
-          </Form.Item>
-        </Form>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <Form layout="vertical" size="small" style={{ flex: 1, minWidth: 280 }}>
+            <Form.Item label="tag">
+              <Input
+                value={component.tag ?? ''}
+                onChange={(e) => onChange({ ...component, tag: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="title" required help="含「=」时，学员端会高亮等号左侧的英文部分">
+              <Input
+                value={component.title}
+                onChange={(e) => onChange({ ...component, title: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="content" required>
+              <Input.TextArea
+                rows={2}
+                value={component.content}
+                onChange={(e) => onChange({ ...component, content: e.target.value })}
+              />
+            </Form.Item>
+            <Form.Item label="collocations（每行一条）">
+              <Input.TextArea
+                rows={3}
+                value={(component.collocations ?? []).join('\n')}
+                onChange={(e) =>
+                  onChange({
+                    ...component,
+                    collocations: multilineToLines(e.target.value),
+                  })
+                }
+              />
+            </Form.Item>
+            <Form.Item label="illustration_url">
+              <ImageOssUploadField
+                value={component.illustration_url ?? ''}
+                onChange={(url) => onChange({ ...component, illustration_url: url })}
+              />
+            </Form.Item>
+          </Form>
+          <KnowledgeCardPreview card={component} />
+        </div>
       )
     case 'whiteboard':
       return (
@@ -625,13 +637,38 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
         </Form>
       )
     case 'follow_reading':
-      return <FollowReadingComponentForm value={component} onChange={onChange} />
+      return (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 320 }}>
+            <FollowReadingComponentForm value={component} onChange={onChange} />
+          </div>
+          <div style={{ width: 340, flexShrink: 0 }}>
+            <div style={{ position: 'sticky', top: 8 }}>
+              <FollowReadingPreview component={component} />
+            </div>
+          </div>
+        </div>
+      )
     case 'single_choice':
-      return <SingleChoiceComponentForm value={component} onChange={onChange} />
+      return (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 320 }}>
+            <SingleChoiceComponentForm value={component} src={src} onChange={onChange} />
+          </div>
+          {/* 表单很长，预览吸顶跟随滚动 */}
+          <div style={{ width: 340, flexShrink: 0 }}>
+            <div style={{ position: 'sticky', top: 8 }}>
+              <SingleChoicePreview component={component} />
+            </div>
+          </div>
+        </div>
+      )
     case 'voice_qa_simple':
       return <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
     case 'guided_speaking':
       return <GuidedSpeakingComponentForm value={component} onChange={onChange} />
+    case 'oral_output':
+      return <OralOutputComponentForm value={component} src={src} onChange={onChange} />
     default: {
       const _e: never = component
       return _e

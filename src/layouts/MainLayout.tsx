@@ -16,6 +16,7 @@ import {
   PictureOutlined,
   FieldTimeOutlined,
   SoundOutlined,
+  AuditOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -44,6 +45,7 @@ export default function MainLayout() {
           { key: '/course-agent-studio', icon: <RocketOutlined />, label: 'AI 课程工坊' },
           { key: '/users', icon: <TeamOutlined />, label: '用户管理' },
           { key: '/learner-admin', icon: <DeploymentUnitOutlined />, label: 'Learner 管理' },
+          { key: '/homework-review', icon: <AuditOutlined />, label: '口语作业审核' },
           { key: '/lesson-image-gen', icon: <PictureOutlined />, label: '课节图片生成器' },
           { key: '/lesson-image-gen-v2', icon: <PictureOutlined />, label: '课节图片生成器 V2' },
           { key: '/lesson-json-design', icon: <CodeOutlined />, label: '课程 JSON 设计' },

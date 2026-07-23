@@ -252,8 +252,15 @@ export interface PlayVideoBriefComponent {
   description: string
 }
 
+export const DEFAULT_SINGLE_CHOICE_TITLE = '请选择你认为正确的答案'
+
+/** 单选题「回看视频」配置，字段同 video_play（不含 type） */
+export type SingleChoiceReviewVideo = Omit<VideoPlayComponent, 'type'>
+
 export interface SingleChoiceComponent {
   type: 'single_choice'
+  /** 题干文案，为空时学员端显示默认文案「请选择你认为正确的答案」 */
+  title?: string
   /** 选项文案列表 */
   options: string[]
   /** 正确答案在 options 中的下标 */
@@ -262,6 +269,8 @@ export interface SingleChoiceComponent {
   correct_feedback_subtitles: SubtitleCue[]
   incorrect_feedback_audio: string
   incorrect_feedback_subtitles: SubtitleCue[]
+  /** 回看视频（选填）：配置后学员端在题目右侧显示「回看视频」半胶囊，点击回看该视频片段 */
+  review_video?: SingleChoiceReviewVideo
 }
 
 export const DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY = '请用语音回答'
@@ -310,6 +319,41 @@ export interface GuidedSpeakingComponent {
   tts_voice_id?: string
 }
 
+export const DEFAULT_ORAL_OUTPUT_MAX_ATTEMPTS = 3
+
+/** 作业报告下发方式：AI 批改完成自动下发 / 老师审核后手动下发 */
+export type HomeworkReportDelivery = 'auto' | 'manual'
+
+export interface OralOutputComponent {
+  type: 'oral_output'
+  /** 作业题目（Markdown，必填） */
+  homework_title_markdown: string
+  /** 作业要求（Markdown，卡片区块 1，可选） */
+  requirements_markdown?: string
+  /** 语言参考（Markdown，卡片区块 2，可选） */
+  language_reference_markdown?: string
+  /** 案例参考文字（Markdown，卡片区块 3，可选） */
+  example_markdown?: string
+  /** 案例音频，引用 src 中 type=audio 的资源 id，可无 */
+  example_audio_src?: string
+  /** 案例视频，引用 src 中 type=video 的资源 id，可无 */
+  example_video_src?: string
+  /** 批改规则（Markdown，必填，学员不可见，供 AI 批改使用） */
+  grading_rubric_markdown: string
+  /** 最大提交次数，默认 3 */
+  max_attempts?: number
+  /** 是否允许使用提词器，默认 true */
+  allow_teleprompter?: boolean
+  /** 提词器默认文本 */
+  teleprompter_default_text?: string
+  /** 报告下发方式，默认 auto */
+  report_delivery?: HomeworkReportDelivery
+  /** 是否根据作业要求为学员生成一版优化内容，默认 false */
+  optimize_for_user?: boolean
+  /** 作答 ASR 语言，默认 en-US */
+  asr_language?: string
+}
+
 export type SceneComponent =
   | BackgroundImageComponent
   | TeacherAvatarComponent
@@ -331,6 +375,7 @@ export type SceneComponent =
   | SingleChoiceComponent
   | VoiceQaSimpleComponent
   | GuidedSpeakingComponent
+  | OralOutputComponent
 
 export type SceneComponentType = SceneComponent['type']
 
@@ -372,7 +417,20 @@ export interface ScenarioCoachActivity {
   nodes: SceneNode[]
 }
 
-export type AtbActivity = SubmergeSequenceActivity | LectureWithPracticeActivity | ScenarioCoachActivity
+export interface HomeworkActivity {
+  id: number | string
+  type: 'homework'
+  layout: 'fullscreen_homework' | string
+  description?: string
+  end_signal?: string
+  nodes: SceneNode[]
+}
+
+export type AtbActivity =
+  | SubmergeSequenceActivity
+  | LectureWithPracticeActivity
+  | ScenarioCoachActivity
+  | HomeworkActivity
 
 export type AtbActivityType = AtbActivity['type']
 
@@ -408,4 +466,8 @@ export function isScenarioCoachActivity(
   activity: AtbActivity,
 ): activity is ScenarioCoachActivity {
   return activity.type === 'scenario_coach'
+}
+
+export function isHomeworkActivity(activity: AtbActivity): activity is HomeworkActivity {
+  return activity.type === 'homework'
 }

@@ -3,6 +3,7 @@ import type {
   AtbActivityType,
   AtbReactionDocument,
   AtbSrcAsset,
+  HomeworkActivity,
   LectureWithPracticeActivity,
   SceneComponent,
   SceneComponentType,
@@ -14,6 +15,7 @@ import {
   DEFAULT_COUNTDOWN_SEC,
   DEFAULT_FOLLOW_READING_INSTRUCTION_HINT,
   DEFAULT_FOLLOW_READING_INSTRUCTION_PRIMARY,
+  DEFAULT_ORAL_OUTPUT_MAX_ATTEMPTS,
   DEFAULT_PLAY_VIDEO_STATUS_TITLE,
   DEFAULT_POSITIVE_FEEDBACK_AUDIOS,
   DEFAULT_VOICE_QA_INSTRUCTION_PRIMARY,
@@ -22,6 +24,7 @@ import {
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_PRIMARY,
   DEFAULT_GUIDED_SPEAKING_INSTRUCTION_HINT,
   DEFAULT_GUIDED_SPEAKING_MAX_ROUNDS,
+  isHomeworkActivity,
   isLectureWithPracticeActivity,
   isScenarioCoachActivity,
   isSubmergeSequenceActivity,
@@ -50,16 +53,64 @@ export const COMPONENT_TYPES = [
   'single_choice',
   'voice_qa_simple',
   'guided_speaking',
+  'oral_output',
 ] as const satisfies readonly SceneComponentType[]
 
-export type EditorStep = 0 | 1 | 2
-
-export type SelectionPath =
+/**
+ * 编辑器选中态。用稳定 id 寻址（而不是数组下标），
+ * 这样节点移动 / 删除 / 撤销后选中不会漂移。
+ */
+export type EditorSelection =
   | { kind: 'lesson' }
-  | { kind: 'src'; index: number }
-  | { kind: 'activity'; activityIndex: number }
-  | { kind: 'node'; activityIndex: number; nodeIndex: number }
-  | { kind: 'component'; activityIndex: number; nodeIndex: number; componentIndex: number }
+  | { kind: 'src' }
+  | { kind: 'activity'; activityId: string }
+  | { kind: 'node'; activityId: string; nodeId: string }
+
+export function activityKeyOf(activity: AtbActivity): string {
+  return String(activity.id)
+}
+
+export function nodeKeyOf(node: SceneNode): string {
+  return String(node.id)
+}
+
+export function findActivityIndexById(doc: AtbReactionDocument, activityId: string): number {
+  return doc.activities.findIndex((a) => String(a.id) === activityId)
+}
+
+export interface NodeLocation {
+  activityIndex: number
+  nodeIndex: number
+}
+
+export function findNodeLocation(
+  doc: AtbReactionDocument,
+  activityId: string,
+  nodeId: string,
+): NodeLocation | null {
+  const activityIndex = findActivityIndexById(doc, activityId)
+  if (activityIndex < 0) return null
+  const nodeIndex = doc.activities[activityIndex]!.nodes.findIndex(
+    (n) => String(n.id) === nodeId,
+  )
+  if (nodeIndex < 0) return null
+  return { activityIndex, nodeIndex }
+}
+
+/** 选中对象在文档中已不存在时，回退到最近的合法层级 */
+export function normalizeSelection(
+  doc: AtbReactionDocument,
+  selection: EditorSelection,
+): EditorSelection {
+  if (selection.kind === 'lesson' || selection.kind === 'src') return selection
+  const activityIndex = findActivityIndexById(doc, selection.activityId)
+  if (activityIndex < 0) return { kind: 'lesson' }
+  if (selection.kind === 'activity') return selection
+  const activity = doc.activities[activityIndex]!
+  const nodeIndex = activity.nodes.findIndex((n) => String(n.id) === selection.nodeId)
+  if (nodeIndex < 0) return { kind: 'activity', activityId: selection.activityId }
+  return selection
+}
 
 export function createEmptyDocument(): AtbReactionDocument {
   return {
@@ -231,6 +282,7 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
     case 'single_choice':
       return {
         type: 'single_choice',
+        title: '',
         options: ['', '', ''],
         correct_option_index: 0,
         correct_feedback_audio: '',
@@ -267,6 +319,23 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
         asr_language: 'en-US',
         tts_voice_id: 'ZxueliLLS',
       }
+    case 'oral_output':
+      return {
+        type: 'oral_output',
+        homework_title_markdown: '',
+        requirements_markdown: '',
+        language_reference_markdown: '',
+        example_markdown: '',
+        example_audio_src: '',
+        example_video_src: '',
+        grading_rubric_markdown: '',
+        max_attempts: DEFAULT_ORAL_OUTPUT_MAX_ATTEMPTS,
+        allow_teleprompter: true,
+        teleprompter_default_text: '',
+        report_delivery: 'auto',
+        optimize_for_user: false,
+        asr_language: 'en-US',
+      }
     default: {
       const _e: never = type
       return _e
@@ -287,6 +356,9 @@ export function createDefaultNode(activityType: AtbActivityType, src: AtbSrcAsse
   }
   if (activityType === 'scenario_coach') {
     return createScenarioCoachNode(src, nodeId)
+  }
+  if (activityType === 'homework') {
+    return createOralOutputNode(src, nodeId)
   }
   return {
     id: nodeId,
@@ -315,6 +387,10 @@ export function isVoiceQaSimpleNode(node: SceneNode): boolean {
 
 export function isGuidedSpeakingNode(node: SceneNode): boolean {
   return node.components.some((c) => c.type === 'guided_speaking')
+}
+
+export function isOralOutputNode(node: SceneNode): boolean {
+  return node.components.some((c) => c.type === 'oral_output')
 }
 
 export function isNarrativeNode(node: SceneNode): boolean {
@@ -405,6 +481,13 @@ export function createScenarioCoachNode(src: AtbSrcAsset[], nodeId: number | str
   }
 }
 
+export function createOralOutputNode(src: AtbSrcAsset[], nodeId: number | string): SceneNode {
+  return {
+    id: nodeId,
+    components: [createDefaultComponent('oral_output', src)],
+  }
+}
+
 export function createSubmergeActivity(id: number, src: AtbSrcAsset[]): SubmergeSequenceActivity {
   const endSignal = suggestEndSignal(id)
   return {
@@ -444,18 +527,28 @@ export function createScenarioCoachActivity(id: number, src: AtbSrcAsset[]): Atb
   }
 }
 
+export function createHomeworkActivity(id: number, src: AtbSrcAsset[]): HomeworkActivity {
+  return {
+    id,
+    type: 'homework',
+    layout: 'fullscreen_homework',
+    description: '',
+    nodes: [createOralOutputNode(src, newNodeId())],
+  }
+}
+
 export function createActivity(type: AtbActivityType, id: number, src: AtbSrcAsset[]): AtbActivity {
   if (type === 'submerge_sequence') return createSubmergeActivity(id, src)
   if (type === 'scenario_coach') return createScenarioCoachActivity(id, src)
+  if (type === 'homework') return createHomeworkActivity(id, src)
   return createLectureActivity(id, src)
 }
 
 function migrateLegacyVideoSubtitle(doc: AtbReactionDocument): AtbReactionDocument {
   const legacy = (doc as AtbReactionDocument & { video_subtitle?: VideoSubtitleTrack }).video_subtitle
   if (!legacy?.segments?.length) {
-    const { video_subtitle: _removed, ...rest } = doc as AtbReactionDocument & {
-      video_subtitle?: VideoSubtitleTrack
-    }
+    const rest = { ...doc } as AtbReactionDocument & { video_subtitle?: VideoSubtitleTrack }
+    delete rest.video_subtitle
     return rest
   }
 
@@ -469,9 +562,8 @@ function migrateLegacyVideoSubtitle(doc: AtbReactionDocument): AtbReactionDocume
         )
       : doc.src
 
-  const { video_subtitle: _removed, ...rest } = { ...doc, src } as AtbReactionDocument & {
-    video_subtitle?: VideoSubtitleTrack
-  }
+  const rest = { ...doc, src } as AtbReactionDocument & { video_subtitle?: VideoSubtitleTrack }
+  delete rest.video_subtitle
   return rest
 }
 
@@ -495,6 +587,40 @@ export function parseDocumentImport(text: string): AtbReactionDocument {
 
 export function stringifyDocument(doc: AtbReactionDocument): string {
   return JSON.stringify(doc, null, 2)
+}
+
+const IMAGE_URL_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'avif', 'bmp', 'heic'])
+const NON_IMAGE_URL_EXTENSIONS = new Set([
+  'mp4', 'mov', 'webm', 'avi', 'mkv',
+  'mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac',
+  'json', 'html', 'htm', 'js', 'css', 'pdf', 'txt', 'md', 'zip',
+])
+
+/**
+ * 校验图片直链 URL；返回 null 表示合规。
+ * 学员端把 img_url 当完整 http(s) URL 消费（OSS 域名走签名），因此必须是完整链接。
+ */
+export function validateImageUrl(url: string): { severity: 'error' | 'hint'; reason: string } | null {
+  const raw = url.trim()
+  let parsed: URL
+  try {
+    parsed = new URL(raw)
+  } catch {
+    return { severity: 'error', reason: '不是完整的 URL（须以 http(s):// 开头）' }
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return { severity: 'error', reason: `协议 ${parsed.protocol}// 不受支持（须为 http(s)://）` }
+  }
+  const lastSegment = parsed.pathname.split('/').pop() ?? ''
+  const dotIndex = lastSegment.lastIndexOf('.')
+  const ext = dotIndex >= 0 ? lastSegment.slice(dotIndex + 1).toLowerCase() : ''
+  if (ext && NON_IMAGE_URL_EXTENSIONS.has(ext)) {
+    return { severity: 'error', reason: `指向 .${ext} 文件，不是图片资源` }
+  }
+  if (!ext || !IMAGE_URL_EXTENSIONS.has(ext)) {
+    return { severity: 'hint', reason: '无法从链接识别图片格式，请确认是图片直链' }
+  }
+  return null
 }
 
 export function validateDocument(doc: AtbReactionDocument): string[] {
@@ -542,6 +668,18 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
       }
     }
 
+    if (isHomeworkActivity(activity)) {
+      if (activity.layout !== 'fullscreen_homework') {
+        errors.push(`activities[${ai}].layout 须为 fullscreen_homework`)
+      }
+      const missingOralOutput = activity.nodes.some(
+        (n) => !n.components.some((c) => c.type === 'oral_output'),
+      )
+      if (missingOralOutput) {
+        errors.push(`activities[${ai}] 作业活动的每个节点都需包含 oral_output 组件`)
+      }
+    }
+
     for (const [ni, node] of activity.nodes.entries()) {
       if (!node.components?.length) {
         errors.push(`activities[${ai}].nodes[${ni}] 至少包含 1 个 component`)
@@ -557,8 +695,18 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] kol_avatar source_id 未在 src 中找到`)
           }
         }
-        if (comp.type === 'background_image' && !comp.img_url?.trim()) {
-          errors.push(`activities[${ai}].nodes[${ni}] background_image 缺少 img_url`)
+        if (comp.type === 'background_image') {
+          if (!comp.img_url?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}] background_image 缺少 img_url`)
+          } else if (activity.type === 'submerge_sequence') {
+            const problem = validateImageUrl(comp.img_url)
+            if (problem) {
+              const prefix = problem.severity === 'hint' ? '[提示] ' : ''
+              errors.push(
+                `${prefix}activities[${ai}].nodes[${ni}].components[${ci}] background_image img_url ${problem.reason}`,
+              )
+            }
+          }
         }
         if (comp.type === 'speech') {
           if (!comp.audio?.trim()) errors.push(`activities[${ai}].nodes[${ni}] speech 缺少 audio`)
@@ -701,6 +849,30 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
               `activities[${ai}].nodes[${ni}].components[${ci}] single_choice 缺少 incorrect_feedback_subtitles`,
             )
           }
+          if (comp.review_video) {
+            const review = comp.review_video
+            if (!review.source_id?.trim()) {
+              errors.push(
+                `activities[${ai}].nodes[${ni}].components[${ci}] single_choice review_video 缺少 source_id`,
+              )
+            } else if (!srcIds.has(review.source_id)) {
+              errors.push(
+                `activities[${ai}].nodes[${ni}].components[${ci}] single_choice review_video source_id 未在 src 中找到`,
+              )
+            } else {
+              const asset = doc.src.find((s) => s.id === review.source_id)
+              if (asset && asset.type !== 'video') {
+                errors.push(
+                  `activities[${ai}].nodes[${ni}].components[${ci}] single_choice review_video source_id 须引用 type=video 的资源`,
+                )
+              }
+            }
+            if (review.start_ms >= review.end_ms) {
+              errors.push(
+                `activities[${ai}].nodes[${ni}].components[${ci}] single_choice review_video start_ms 须小于 end_ms`,
+              )
+            }
+          }
         }
         if (comp.type === 'voice_qa_simple') {
           if (!comp.hint_markdown?.trim()) {
@@ -742,25 +914,68 @@ export function validateDocument(doc: AtbReactionDocument): string[] {
             )
           }
         }
+        if (comp.type === 'oral_output') {
+          if (activity.type !== 'homework') {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] oral_output 只能用于作业（homework）活动`,
+            )
+          }
+          if (!comp.homework_title_markdown?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output 缺少作业题目（homework_title_markdown）`)
+          }
+          if (!comp.grading_rubric_markdown?.trim()) {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output 缺少批改规则（grading_rubric_markdown）`)
+          }
+          const maxAttempts = comp.max_attempts ?? DEFAULT_ORAL_OUTPUT_MAX_ATTEMPTS
+          if (maxAttempts < 1 || maxAttempts > 10) {
+            errors.push(
+              `activities[${ai}].nodes[${ni}].components[${ci}] oral_output max_attempts 须在 1~10 之间`,
+            )
+          }
+          if (comp.example_audio_src) {
+            const asset = doc.src.find((s) => s.id === comp.example_audio_src)
+            if (!asset) {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output example_audio_src 未在 src 中找到`)
+            } else if (asset.type !== 'audio') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output example_audio_src 须引用 type=audio 的资源`)
+            }
+          }
+          if (comp.example_video_src) {
+            const asset = doc.src.find((s) => s.id === comp.example_video_src)
+            if (!asset) {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output example_video_src 未在 src 中找到`)
+            } else if (asset.type !== 'video') {
+              errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output example_video_src 须引用 type=video 的资源`)
+            }
+          }
+          if (comp.report_delivery && comp.report_delivery !== 'auto' && comp.report_delivery !== 'manual') {
+            errors.push(`activities[${ai}].nodes[${ni}].components[${ci}] oral_output report_delivery 须为 auto 或 manual`)
+          }
+        }
       }
       if (isPlayVideoNode(node) && node.components.some((c) => c.type === 'speech')) {
         errors.push(`activities[${ai}].nodes[${ni}] playVideo 节点不应同时包含 speech 组件`)
       }
-      if (isFollowReadingNode(node) && node.components.some((c) => c.type === 'speech')) {
-        // speech 会先播完再解锁跟读，属于支持的用法，降级为提示
-        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + follow_reading，speech 将先播，播完后跟读解锁`)
-      }
-      if (isSingleChoiceNode(node) && node.components.some((c) => c.type === 'speech')) {
-        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + single_choice，speech 将先播，播完后选择题解锁`)
-      }
-      if (isVoiceQaSimpleNode(node) && node.components.some((c) => c.type === 'speech')) {
-        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + voice_qa_simple，speech 将先播，播完后语音问答解锁`)
-      }
-      if (isGuidedSpeakingNode(node) && node.components.some((c) => c.type === 'speech')) {
-        errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点含 speech + guided_speaking，speech 将先播，播完后引导口语解锁`)
-      }
+      // speech + 互动组件（跟读/选择题/语音问答/引导口语）属正常用法：speech 先播完再解锁互动，不提示
       if (isGuidedSpeakingNode(node) && isVoiceQaSimpleNode(node)) {
         errors.push(`[提示] activities[${ai}].nodes[${ni}] 节点同时含 voice_qa_simple 与 guided_speaking，请只保留一种语音互动`)
+      }
+      if (
+        node.components.some((c) => c.type === 'speech') &&
+        !node.components.some((c) => c.type === 'teacher_avatar')
+      ) {
+        errors.push(
+          `[提示] activities[${ai}].nodes[${ni}] 缺少老师头像（teacher_avatar），学员端将显示占位头像`,
+        )
+      }
+      // 看视频节点头像优先取 kol_avatar，回退 teacher_avatar，两者都缺才会显示占位图
+      if (
+        isPlayVideoNode(node) &&
+        !node.components.some((c) => c.type === 'kol_avatar' || c.type === 'teacher_avatar')
+      ) {
+        errors.push(
+          `[提示] activities[${ai}].nodes[${ni}] 看视频节点缺少 KOL 头像（kol_avatar）或老师头像（teacher_avatar），学员端将显示占位头像`,
+        )
       }
     }
   }
@@ -776,28 +991,54 @@ export function moveItem<T>(arr: T[], from: number, to: number): T[] {
   return next
 }
 
-export function selectionLabel(path: SelectionPath, doc: AtbReactionDocument): string {
-  switch (path.kind) {
-    case 'lesson':
-      return doc.lesson_title?.trim() || '课节信息'
-    case 'src': {
-      const s = doc.src[path.index]
-      return s ? `src: ${s.description || s.id.slice(0, 8)}` : 'src'
-    }
-    case 'activity': {
-      const a = doc.activities[path.activityIndex]
-      return a ? `Activity ${a.id}: ${a.type}` : 'Activity'
-    }
-    case 'node': {
-      const n = doc.activities[path.activityIndex]?.nodes[path.nodeIndex]
-      return n ? `Node ${n.id}` : 'Node'
-    }
-    case 'component': {
-      const c =
-        doc.activities[path.activityIndex]?.nodes[path.nodeIndex]?.components[path.componentIndex]
-      return c ? `Component: ${c.type}` : 'Component'
-    }
-    default:
-      return ''
+// ---------- 结构化校验 ----------
+
+export interface ValidationIssue {
+  severity: 'error' | 'hint'
+  /** validateDocument 的原始文案 */
+  raw: string
+  /** 去掉 [提示] 前缀与 activities[i].nodes[j] 定位串后的可读文案 */
+  text: string
+  activityIndex?: number
+  nodeIndex?: number
+  srcIndex?: number
+}
+
+const HINT_PREFIX_RE = /^\[提示\]\s*/
+const ACTIVITY_RE = /activities\[(\d+)\]/
+const NODE_RE = /nodes\[(\d+)\]/
+const SRC_RE = /^src\[(\d+)\]/
+const LOCATION_STRIP_RE =
+  /(?:activities\[\d+\])?(?:\.?nodes\[\d+\])?(?:\.?components\[\d+\])?\.?\s*/
+
+function parseValidationMessage(raw: string): ValidationIssue {
+  const severity: ValidationIssue['severity'] = HINT_PREFIX_RE.test(raw) ? 'hint' : 'error'
+  const body = raw.replace(HINT_PREFIX_RE, '')
+  const activityMatch = ACTIVITY_RE.exec(body)
+  const nodeMatch = NODE_RE.exec(body)
+  const srcMatch = SRC_RE.exec(body)
+  const text = body.replace(LOCATION_STRIP_RE, '').trim() || body
+  return {
+    severity,
+    raw,
+    text,
+    activityIndex: activityMatch ? Number(activityMatch[1]) : undefined,
+    nodeIndex: nodeMatch ? Number(nodeMatch[1]) : undefined,
+    srcIndex: srcMatch ? Number(srcMatch[1]) : undefined,
   }
+}
+
+/** 在 validateDocument 之上补充定位信息，供校验面板跳转与大纲树标红 */
+export function collectValidationIssues(doc: AtbReactionDocument): ValidationIssue[] {
+  return validateDocument(doc).map(parseValidationMessage)
+}
+
+/** 校验问题的人类可读定位，如 "A2 · 节点7" */
+export function issueLocationLabel(doc: AtbReactionDocument, issue: ValidationIssue): string {
+  if (issue.srcIndex != null) return `src ${issue.srcIndex + 1}`
+  if (issue.activityIndex == null) return '全局'
+  const activity = doc.activities[issue.activityIndex]
+  const activityLabel = activity ? `A${activity.id}` : `A?${issue.activityIndex}`
+  if (issue.nodeIndex == null) return activityLabel
+  return `${activityLabel} · 节点${issue.nodeIndex + 1}`
 }

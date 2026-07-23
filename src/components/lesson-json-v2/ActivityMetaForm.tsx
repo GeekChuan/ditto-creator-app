@@ -1,6 +1,7 @@
 import { Form, Input } from 'antd'
 import type { AtbActivity } from '../../types/atbReactionV2'
 import {
+  isHomeworkActivity,
   isLectureWithPracticeActivity,
   isScenarioCoachActivity,
   isSubmergeSequenceActivity,
@@ -88,6 +89,19 @@ export default function ActivityMetaForm({ activity, src, onChange }: Props) {
               placeholder="对话进度"
               onChange={(e) => onChange({ ...activity, progress_label: e.target.value })}
             />
+          </Form.Item>
+          <Form.Item label="end_signal">
+            <Input
+              value={activity.end_signal ?? ''}
+              onChange={(e) => onChange({ ...activity, end_signal: e.target.value })}
+            />
+          </Form.Item>
+        </>
+      ) : null}
+      {isHomeworkActivity(activity) ? (
+        <>
+          <Form.Item label="layout">
+            <Input value={activity.layout} disabled />
           </Form.Item>
           <Form.Item label="end_signal">
             <Input
