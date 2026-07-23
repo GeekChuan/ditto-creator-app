@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react'
-import { Button, Dropdown, Input, Modal, Space, message } from 'antd'
+import { Button, Dropdown, Input, Modal, Space, Typography, Upload, message } from 'antd'
 import {
   CopyOutlined,
   DownloadOutlined,
   EyeOutlined,
   FileAddOutlined,
   ImportOutlined,
+  InboxOutlined,
   RestOutlined,
 } from '@ant-design/icons'
 import type { AtbReactionDocument } from '../../types/atbReactionV2'
 import { stringifyDocument, validateDocument } from '../../types/atbReactionV2Editor'
 
 const { TextArea } = Input
+const { Text } = Typography
 
 interface Props {
   doc: AtbReactionDocument
@@ -24,6 +26,7 @@ interface Props {
 export default function JsonIoToolbar({ doc, onImport, onReset, onLoadSample }: Props) {
   const [importOpen, setImportOpen] = useState(false)
   const [importText, setImportText] = useState('')
+  const [importFileName, setImportFileName] = useState<string | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
   const [modal, contextHolder] = Modal.useModal()
 
@@ -61,10 +64,24 @@ export default function JsonIoToolbar({ doc, onImport, onReset, onLoadSample }: 
       onImport(importText)
       setImportOpen(false)
       setImportText('')
+      setImportFileName(null)
       message.success('导入成功')
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : '导入失败')
     }
+  }
+
+  const readImportFile = async (file: File) => {
+    try {
+      const text = await file.text()
+      JSON.parse(text) // 早期报错：非 JSON 文件直接提示，不污染文本框
+      setImportText(text)
+      setImportFileName(file.name)
+      message.success(`已读取 ${file.name}，确认内容后点「导入」`)
+    } catch {
+      message.error(`${file.name} 不是合法的 JSON 文件`)
+    }
+    return false
   }
 
   const confirmReset = () => {
@@ -108,20 +125,52 @@ export default function JsonIoToolbar({ doc, onImport, onReset, onLoadSample }: 
       </Space>
 
       <Modal
-        title="从文本导入 JSON"
+        title="导入 JSON"
         open={importOpen}
         onOk={handleImport}
-        onCancel={() => setImportOpen(false)}
+        onCancel={() => {
+          setImportOpen(false)
+          setImportFileName(null)
+        }}
         width={720}
         okText="导入"
+        okButtonProps={{ disabled: !importText.trim() }}
       >
-        <TextArea
-          rows={14}
-          value={importText}
-          onChange={(e) => setImportText(e.target.value)}
-          placeholder="粘贴完整 ATB V2 JSON"
-          style={{ fontFamily: 'monospace', fontSize: 12 }}
-        />
+        <Space direction="vertical" size={10} style={{ width: '100%' }}>
+          <Upload.Dragger
+            accept=".json,application/json"
+            showUploadList={false}
+            multiple={false}
+            beforeUpload={(file) => readImportFile(file)}
+            style={{ padding: '4px 0' }}
+          >
+            <p className="ant-upload-drag-icon" style={{ marginBottom: 4 }}>
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text" style={{ fontSize: 13 }}>
+              点击或拖拽 JSON 文件到此处
+            </p>
+            {importFileName ? (
+              <Text type="success" style={{ fontSize: 12 }}>
+                已读取：{importFileName}
+              </Text>
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                读取后会填入下方文本框，确认后再导入
+              </Text>
+            )}
+          </Upload.Dragger>
+          <TextArea
+            rows={10}
+            value={importText}
+            onChange={(e) => {
+              setImportText(e.target.value)
+              setImportFileName(null)
+            }}
+            placeholder="或直接粘贴完整 ATB V2 JSON"
+            style={{ fontFamily: 'monospace', fontSize: 12 }}
+          />
+        </Space>
       </Modal>
 
       <Modal

@@ -13,6 +13,7 @@ const HISTORY_LIMIT = 100
 const HISTORY_GROUP_WINDOW_MS = 1200
 const PERSIST_DEBOUNCE_MS = 400
 const NOTES_STORAGE_KEY = 'atb_v2_editor_notes_v1'
+const DRAFT_BINDING_STORAGE_KEY = 'atb_v2_editor_draft_binding_v1'
 
 function loadInitialDoc(): AtbReactionDocument {
   try {
@@ -36,6 +37,35 @@ export interface NodeNote {
   text: string
   createdAt: number
   done: boolean
+}
+
+/** 当前编辑器绑定的云端草稿：保存新版本时用它定位草稿并递增版本号 */
+export interface DraftBinding {
+  draftId: string
+  title: string
+  latestVersionNo: number
+}
+
+function loadInitialDraftBinding(): DraftBinding | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_BINDING_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as DraftBinding
+      if (parsed?.draftId) return parsed
+    }
+  } catch {
+    // 绑定信息损坏时视为未绑定
+  }
+  return null
+}
+
+function persistDraftBinding(binding: DraftBinding | null) {
+  try {
+    if (binding) localStorage.setItem(DRAFT_BINDING_STORAGE_KEY, JSON.stringify(binding))
+    else localStorage.removeItem(DRAFT_BINDING_STORAGE_KEY)
+  } catch {
+    // 忽略配额错误
+  }
 }
 
 function loadInitialNotes(): NodeNote[] {
@@ -67,11 +97,15 @@ interface AtbV2EditorState {
   lastHistoryGroup: string | null
   lastHistoryAt: number
   notes: NodeNote[]
+  draftBinding: DraftBinding | null
 
   setSelection: (selection: EditorSelection) => void
   addNote: (note: Omit<NodeNote, 'id' | 'createdAt' | 'done'>) => void
   toggleNoteDone: (id: string) => void
   removeNote: (id: string) => void
+  /** 从草稿夹载入版本时整体替换备注 */
+  replaceNotes: (notes: NodeNote[]) => void
+  setDraftBinding: (binding: DraftBinding | null) => void
   /** 常规编辑入口：记录撤销历史 */
   updateDoc: (
     updater: (prev: AtbReactionDocument) => AtbReactionDocument,
@@ -94,8 +128,16 @@ export const useAtbV2EditorStore = create<AtbV2EditorState>((set, get) => ({
   lastHistoryGroup: null,
   lastHistoryAt: 0,
   notes: loadInitialNotes(),
+  draftBinding: loadInitialDraftBinding(),
 
   setSelection: (selection) => set({ selection }),
+
+  replaceNotes: (notes) => set({ notes }),
+
+  setDraftBinding: (binding) => {
+    persistDraftBinding(binding)
+    set({ draftBinding: binding })
+  },
 
   addNote: (note) =>
     set((state) => ({
@@ -151,6 +193,7 @@ export const useAtbV2EditorStore = create<AtbV2EditorState>((set, get) => ({
 
   resetDraft: () => {
     localStorage.removeItem(DRAFT_STORAGE_KEY)
+    persistDraftBinding(null)
     set({
       doc: createEmptyDocument(),
       past: [],
@@ -158,12 +201,16 @@ export const useAtbV2EditorStore = create<AtbV2EditorState>((set, get) => ({
       lastHistoryGroup: null,
       lastHistoryAt: 0,
       selection: { kind: 'lesson' },
+      draftBinding: null,
     })
   },
 
   importDocument: (text) => {
     const parsed = parseDocumentImport(text)
     get().replaceDoc(parsed)
+    // 导入的 JSON 可能是另一门课，解除与云端草稿的绑定，避免误存到别的草稿里
+    persistDraftBinding(null)
+    set({ draftBinding: null })
   },
 
   undo: () => {

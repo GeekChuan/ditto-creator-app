@@ -43,15 +43,6 @@ import { componentLabel, getNodeKind, getNodeSummary } from './lib/nodeSummary'
 
 const { Text } = Typography
 
-/** 默认折叠的辅助组件（不承载教学内容） */
-const SECONDARY_COMPONENT_TYPES: SceneComponentType[] = [
-  'teacher_avatar',
-  'background_image',
-  'kol_avatar',
-  'countdown',
-  'material_follow_reading_anchor',
-]
-
 interface Props {
   activityId: string
   nodeId: string
@@ -227,10 +218,6 @@ export default function NodeEditorPanel({ activityId, nodeId, issues, onPreview 
     ),
   }))
 
-  const defaultActiveKeys = node.components
-    .map((comp, i) => (SECONDARY_COMPONENT_TYPES.includes(comp.type) ? null : String(i)))
-    .filter((k): k is string => k !== null)
-
   return (
     <div>
       <div
@@ -310,7 +297,6 @@ export default function NodeEditorPanel({ activityId, nodeId, issues, onPreview 
         <Collapse
           key={`${activityId}:${nodeId}:${activityIndex}:${nodeIndex}`}
           size="small"
-          defaultActiveKey={defaultActiveKeys}
           items={collapseItems}
         />
       ) : (

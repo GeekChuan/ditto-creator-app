@@ -1,4 +1,5 @@
 import { Typography } from 'antd'
+import { useSignedMediaUrl } from '../../hooks/useSignedMediaUrl'
 import type { KnowledgeCardComponent } from '../../types/atbReactionV2'
 
 const { Text } = Typography
@@ -12,6 +13,8 @@ const HIGHLIGHT = '#2f8f57'
  * 高亮规则一致：title 含「=」时高亮等号左侧部分。
  */
 export default function KnowledgeCardPreview({ card }: { card: KnowledgeCardComponent }) {
+  // 私有 OSS 插图须换签名链接，否则 403 裂图
+  const illustrationUrl = useSignedMediaUrl(card.illustration_url)
   const title = card.title?.trim() || '（标题）'
   const eqIndex = title.indexOf('=')
   const highlighted = eqIndex > 0 ? title.slice(0, eqIndex).trim() : title
@@ -87,9 +90,9 @@ export default function KnowledgeCardPreview({ card }: { card: KnowledgeCardComp
             ) : null}
           </div>
 
-          {card.illustration_url?.trim() ? (
+          {illustrationUrl ? (
             <img
-              src={card.illustration_url}
+              src={illustrationUrl}
               alt=""
               style={{ width: 72, height: 72, objectFit: 'contain', flexShrink: 0 }}
             />

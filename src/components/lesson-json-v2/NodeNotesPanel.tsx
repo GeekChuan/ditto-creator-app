@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Button, Input, Select, Tag, Tooltip, Typography, message } from 'antd'
-import { CheckOutlined, DeleteOutlined, UndoOutlined } from '@ant-design/icons'
+import { Button, Dropdown, Input, Select, Tag, Tooltip, Typography, message } from 'antd'
+import { CheckOutlined, DeleteOutlined, DownloadOutlined, UndoOutlined } from '@ant-design/icons'
 import { findNodeLocation } from '../../types/atbReactionV2Editor'
 import { useAtbV2EditorStore } from '../../pages/lesson-json-design-v2/store'
+import { downloadTextFile, notesToCsv, notesToMarkdown } from '../../utils/noteExport'
 
 const { Text } = Typography
 
@@ -73,6 +74,19 @@ export default function NodeNotesPanel({ playingTarget = null }: Props) {
     setSelection({ kind: 'node', activityId, nodeId })
   }
 
+  const exportNotes = (format: 'md' | 'csv') => {
+    if (notes.length === 0) {
+      message.info('暂无备注可导出')
+      return
+    }
+    const stamp = new Date().toISOString().slice(0, 10)
+    if (format === 'md') {
+      downloadTextFile(`快速备注_${stamp}.md`, notesToMarkdown(notes, `快速备注（${stamp}）`), 'text/markdown')
+    } else {
+      downloadTextFile(`快速备注_${stamp}.csv`, notesToCsv(notes), 'text/csv')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -87,6 +101,25 @@ export default function NodeNotesPanel({ playingTarget = null }: Props) {
         <Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
           {openCount} 待处理
         </Text>
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              { key: 'md', label: '导出 Markdown' },
+              { key: 'csv', label: '导出 CSV（Excel）' },
+            ],
+            onClick: ({ key }) => exportNotes(key as 'md' | 'csv'),
+          }}
+        >
+          <Tooltip title="导出全部备注">
+            <Button
+              type="text"
+              size="small"
+              style={{ height: 20, width: 20, minWidth: 20, flexShrink: 0 }}
+              icon={<DownloadOutlined />}
+            />
+          </Tooltip>
+        </Dropdown>
       </div>
 
       <div style={{ display: 'flex', gap: 6 }}>

@@ -5,6 +5,7 @@ import { toolsApi } from '../../api/tools'
 import type { AtbReactionDocument, AtbSrcAsset } from '../../types/atbReactionV2'
 import { newSrcId } from '../../types/atbReactionV2Editor'
 import ImageOssUploadField from '../ImageOssUploadField'
+import AssetLibraryVideoPicker from './AssetLibraryVideoPicker'
 import { mapUtterancesToVideoSegments, resolvePlayableAudioUrl } from './lib/subtitleAlign'
 import MediaOssUploadField from './MediaOssUploadField'
 import VideoSubtitleEditor from './VideoSubtitleEditor'
@@ -18,6 +19,7 @@ interface Props {
 
 export default function SrcAssetsTable({ doc, onChangeSrc }: Props) {
   const [asrLoadingId, setAsrLoadingId] = useState<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const updateRow = (index: number, patch: Partial<AtbSrcAsset>) => {
     onChangeSrc(doc.src.map((s, i) => (i === index ? { ...s, ...patch } : s)))
@@ -160,7 +162,15 @@ export default function SrcAssetsTable({ doc, onChangeSrc }: Props) {
         >
           添加资源
         </Button>
+        <Button size="small" onClick={() => setPickerOpen(true)}>
+          从素材库导入视频
+        </Button>
       </Space>
+      <AssetLibraryVideoPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onImport={(asset) => onChangeSrc([...doc.src, asset])}
+      />
       <Table
         size="small"
         rowKey="id"

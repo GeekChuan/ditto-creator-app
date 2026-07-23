@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber, Select, Switch } from 'antd'
+import { Form, Input, InputNumber, Switch } from 'antd'
 import type {
   AtbActivity,
   AtbSrcAsset,
@@ -8,9 +8,11 @@ import type {
 import { isSubmergeSequenceActivity } from '../../types/atbReactionV2'
 import ImageOssUploadField from '../ImageOssUploadField'
 import FollowReadingPreview from './FollowReadingPreview'
+import GuidedSpeakingPreview from './GuidedSpeakingPreview'
 import KnowledgeCardPreview from './KnowledgeCardPreview'
 import SingleChoicePreview from './SingleChoicePreview'
 import TeacherAvatarPreview from './TeacherAvatarPreview'
+import VoiceQaSimplePreview from './VoiceQaSimplePreview'
 import SrcIdSelect from './SrcIdSelect'
 import FollowReadingComponentForm from './components/FollowReadingComponentForm'
 import SingleChoiceComponentForm from './components/SingleChoiceComponentForm'
@@ -18,6 +20,7 @@ import SpeechComponentForm from './components/SpeechComponentForm'
 import VoiceQaSimpleComponentForm from './components/VoiceQaSimpleComponentForm'
 import GuidedSpeakingComponentForm from './components/GuidedSpeakingComponentForm'
 import OralOutputComponentForm from './components/OralOutputComponentForm'
+import VideoPlayComponentForm from './components/VideoPlayComponentForm'
 
 interface Props {
   component: SceneComponent
@@ -229,70 +232,7 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
         </Form>
       )
     case 'video_play':
-      return (
-        <Form layout="vertical" size="small">
-          <Form.Item label="source_id" required>
-            <SrcIdSelect
-              src={src}
-              filterType="video"
-              value={component.source_id}
-              onChange={(id) => onChange({ ...component, source_id: id })}
-              placeholder="选择视频资源"
-            />
-          </Form.Item>
-          <Form.Item
-            label="start_ms"
-            required
-            validateStatus={component.start_ms >= component.end_ms ? 'warning' : undefined}
-            help={
-              component.start_ms >= component.end_ms ? 'start_ms 须小于 end_ms' : undefined
-            }
-          >
-            <InputNumber
-              min={0}
-              style={{ width: '100%' }}
-              value={component.start_ms}
-              onChange={(v) => onChange({ ...component, start_ms: v ?? 0 })}
-            />
-          </Form.Item>
-          <Form.Item label="end_ms" required>
-            <InputNumber
-              min={0}
-              style={{ width: '100%' }}
-              value={component.end_ms}
-              onChange={(v) => onChange({ ...component, end_ms: v ?? 0 })}
-            />
-          </Form.Item>
-          <Form.Item label="playback_rate">
-            <InputNumber
-              min={0.1}
-              max={3}
-              step={0.1}
-              style={{ width: '100%' }}
-              value={component.playback_rate ?? 1}
-              onChange={(v) => onChange({ ...component, playback_rate: v ?? 1 })}
-            />
-          </Form.Item>
-          <Form.Item label="subtitle_override">
-            <Select
-              allowClear
-              value={component.subtitle_override}
-              onChange={(v) => onChange({ ...component, subtitle_override: v })}
-              options={[
-                { value: 'auto', label: 'auto' },
-                { value: 'on', label: 'on' },
-                { value: 'off', label: 'off' },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item label="autoplay">
-            <Switch
-              checked={component.autoplay !== false}
-              onChange={(v) => onChange({ ...component, autoplay: v })}
-            />
-          </Form.Item>
-        </Form>
-      )
+      return <VideoPlayComponentForm value={component} src={src} onChange={onChange} />
     case 'narrative_video':
       return (
         <Form layout="vertical" size="small">
@@ -664,9 +604,31 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
         </div>
       )
     case 'voice_qa_simple':
-      return <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
+      return (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 320 }}>
+            <VoiceQaSimpleComponentForm value={component} onChange={onChange} />
+          </div>
+          <div style={{ width: 340, flexShrink: 0 }}>
+            <div style={{ position: 'sticky', top: 8 }}>
+              <VoiceQaSimplePreview component={component} />
+            </div>
+          </div>
+        </div>
+      )
     case 'guided_speaking':
-      return <GuidedSpeakingComponentForm value={component} onChange={onChange} />
+      return (
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 320 }}>
+            <GuidedSpeakingComponentForm value={component} onChange={onChange} />
+          </div>
+          <div style={{ width: 340, flexShrink: 0 }}>
+            <div style={{ position: 'sticky', top: 8 }}>
+              <GuidedSpeakingPreview component={component} />
+            </div>
+          </div>
+        </div>
+      )
     case 'oral_output':
       return <OralOutputComponentForm value={component} src={src} onChange={onChange} />
     default: {

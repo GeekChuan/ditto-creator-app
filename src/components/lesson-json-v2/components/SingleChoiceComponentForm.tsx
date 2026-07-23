@@ -27,6 +27,7 @@ import { DEFAULT_SINGLE_CHOICE_TITLE } from '../../../types/atbReactionV2'
 import MediaOssUploadField from '../MediaOssUploadField'
 import SrcIdSelect from '../SrcIdSelect'
 import TtsVoiceSelect from './TtsVoiceSelect'
+import VideoClipPicker from './VideoClipPicker'
 import { mapForcedAlignSegments, resolvePlayableAudioUrl } from '../lib/subtitleAlign'
 import { DEFAULT_TTS_VOICE_ID, useTtsVoiceStore } from '../lib/ttsVoiceStore'
 
@@ -499,32 +500,16 @@ export default function SingleChoiceComponentForm({ value, src, onChange }: Prop
                 placeholder="选择回看的视频资源"
               />
             </Form.Item>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Form.Item
-                label="start_ms"
-                required
-                style={{ flex: 1, marginBottom: 8 }}
-                validateStatus={reviewVideo.start_ms >= reviewVideo.end_ms ? 'warning' : undefined}
-                help={
-                  reviewVideo.start_ms >= reviewVideo.end_ms ? 'start_ms 须小于 end_ms' : undefined
-                }
-              >
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  value={reviewVideo.start_ms}
-                  onChange={(v) => updateReviewVideo({ start_ms: v ?? 0 })}
-                />
-              </Form.Item>
-              <Form.Item label="end_ms" required style={{ flex: 1, marginBottom: 8 }}>
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  value={reviewVideo.end_ms}
-                  onChange={(v) => updateReviewVideo({ end_ms: v ?? 0 })}
-                />
-              </Form.Item>
-            </div>
+            <Form.Item label="回看片段" required style={{ marginBottom: 8 }}>
+              <VideoClipPicker
+                src={src}
+                sourceId={reviewVideo.source_id}
+                startMs={reviewVideo.start_ms}
+                endMs={reviewVideo.end_ms}
+                playbackRate={reviewVideo.playback_rate ?? 1}
+                onChangeRange={(patch) => updateReviewVideo(patch)}
+              />
+            </Form.Item>
             <div style={{ display: 'flex', gap: 8 }}>
               <Form.Item label="playback_rate" style={{ flex: 1, marginBottom: 4 }}>
                 <InputNumber

@@ -5,6 +5,7 @@ import type { AtbReactionDocument } from '../../types/atbReactionV2'
 import { collectValidationIssues, findNodeLocation } from '../../types/atbReactionV2Editor'
 import ActivityEditorPanel from '../../components/lesson-json-v2/ActivityEditorPanel'
 import BatchVoiceCompletionModal from '../../components/lesson-json-v2/BatchVoiceCompletionModal'
+import DraftLockerControls from '../../components/lesson-json-v2/DraftLockerControls'
 import JsonIoToolbar from '../../components/lesson-json-v2/JsonIoToolbar'
 import LessonMetaForm from '../../components/lesson-json-v2/LessonMetaForm'
 import MobilePreviewDock from '../../components/lesson-json-v2/MobilePreviewDock'
@@ -201,6 +202,7 @@ export default function LessonJsonDesignV2Page() {
           <Tooltip title="重做（Shift+Cmd/Ctrl+Z）">
             <Button icon={<RedoOutlined />} disabled={!canRedo} onClick={redo} />
           </Tooltip>
+          <DraftLockerControls />
           <JsonIoToolbar
             doc={deferredDoc}
             onImport={importDocument}

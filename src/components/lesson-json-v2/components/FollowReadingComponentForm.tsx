@@ -1,6 +1,13 @@
-import { useState } from 'react'
-import { Button, Form, Input, Space, Tag, Typography, message } from 'antd'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { useEffect, useRef, useState } from 'react'
+import { Button, Form, Input, Popconfirm, Space, Tag, Typography, message } from 'antd'
+import {
+  DeleteOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  PlusOutlined,
+  SoundOutlined,
+} from '@ant-design/icons'
+import { useSignedMediaUrl } from '../../../hooks/useSignedMediaUrl'
 import type {
   FollowReadingComponent,
   FollowReadingPositiveFeedbackAudio,
@@ -25,6 +32,53 @@ function ttsErrorMessage(e: unknown): string {
   const err = e as { response?: { data?: { detail?: string } } }
   const detail = err?.response?.data?.detail
   return typeof detail === 'string' ? detail : 'TTS 生成失败'
+}
+
+/** 音频试听小按钮：私有 OSS 地址自动换签名链接 */
+function AudioPreviewButton({ url, label = '试听' }: { url: string; label?: string }) {
+  const playUrl = useSignedMediaUrl(url)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playing, setPlaying] = useState(false)
+
+  // 音频地址变化（如重新生成）时停止旧的播放
+  useEffect(() => {
+    audioRef.current?.pause()
+    setPlaying(false)
+  }, [playUrl])
+
+  useEffect(() => () => audioRef.current?.pause(), [])
+
+  const toggle = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) {
+      audio.pause()
+    } else {
+      audio.currentTime = 0
+      void audio.play()
+    }
+  }
+
+  return (
+    <>
+      <Button
+        size="small"
+        icon={playing ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
+        disabled={!playUrl}
+        onClick={toggle}
+      >
+        {playing ? '停止' : label}
+      </Button>
+      <audio
+        ref={audioRef}
+        src={playUrl ?? undefined}
+        preload="none"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+    </>
+  )
 }
 
 interface FeedbackRowProps {
@@ -104,12 +158,17 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
   // 全局音色偏好：选一次所有 TTS 入口共用
   const voiceId = useTtsVoiceStore((s) => s.voiceId)
   const setVoiceId = useTtsVoiceStore((s) => s.setVoiceId)
+  // 肯定语音的独立音色（可与讲课主音色不同），全局记忆
+  const feedbackVoiceId = useTtsVoiceStore((s) => s.feedbackVoiceId)
+  const setFeedbackVoiceId = useTtsVoiceStore((s) => s.setFeedbackVoiceId)
   const [referenceTtsLoading, setReferenceTtsLoading] = useState(false)
   const [batchTtsLoading, setBatchTtsLoading] = useState(false)
+  const [redubLoading, setRedubLoading] = useState(false)
   // 详略分层：音频 URL / 指令文案 / 评测语言默认收起
   const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const resolveVoiceId = () => voiceId.trim() || DEFAULT_TTS_VOICE_ID
+  const resolveFeedbackVoiceId = () => feedbackVoiceId.trim() || resolveVoiceId()
 
   const updateFeedback = (index: number, patch: Partial<FollowReadingPositiveFeedbackAudio>) => {
     onChange({
@@ -168,7 +227,7 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
       for (const i of pendingIndexes) {
         const res = await assetsApi.minimaxTts({
           text: nextFeedbacks[i].text_en.trim(),
-          voice_id: resolveVoiceId(),
+          voice_id: resolveFeedbackVoiceId(),
         })
         nextFeedbacks[i] = { ...nextFeedbacks[i], audio_url: res.audio_url }
       }
@@ -181,10 +240,46 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
     }
   }
 
+  /** 用当前所选肯定语音音色重配全部反馈条（覆盖已有音频），中途失败保留已完成的 */
+  const runRedubAll = async () => {
+    const indexes = feedbacks
+      .map((item, i) => ({ item, i }))
+      .filter(({ item }) => item.text_en.trim())
+      .map(({ i }) => i)
+    if (!indexes.length) {
+      message.info('没有可配音的反馈条，请先填写英文文案')
+      return
+    }
+    const useVoice = resolveFeedbackVoiceId()
+    setRedubLoading(true)
+    const nextFeedbacks = [...feedbacks]
+    let done = 0
+    try {
+      for (const i of indexes) {
+        const res = await assetsApi.minimaxTts({
+          text: nextFeedbacks[i].text_en.trim(),
+          voice_id: useVoice,
+        })
+        nextFeedbacks[i] = { ...nextFeedbacks[i], audio_url: res.audio_url }
+        done += 1
+      }
+      onChange({ ...value, positive_feedback_audios: nextFeedbacks })
+      message.success(`已用音色 ${useVoice} 重配 ${done} 条肯定语音`)
+    } catch (e: unknown) {
+      if (done > 0) {
+        onChange({ ...value, positive_feedback_audios: nextFeedbacks })
+      }
+      message.error(`${ttsErrorMessage(e)}（已完成 ${done}/${indexes.length} 条，其余保持原音频）`)
+    } finally {
+      setRedubLoading(false)
+    }
+  }
+
   const hasReference = Boolean(value.reference_audio?.trim())
   const missingFeedbackAudio = feedbacks.filter(
     (f) => f.text_en.trim() && !f.audio_url.trim(),
   ).length
+  const redubbableCount = feedbacks.filter((f) => f.text_en.trim()).length
 
   return (
     <Form layout="vertical" size="small">
@@ -228,6 +323,7 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
         >
           用 text_en 生成原音
         </Button>
+        {hasReference ? <AudioPreviewButton url={value.reference_audio} /> : null}
       </div>
 
       {/* 高分反馈：单行列表 + 一键补全缺失 */}
@@ -240,7 +336,7 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
           background: '#fcfcfd',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <Text strong style={{ fontSize: 13 }}>
             高分反馈语音
           </Text>
@@ -248,17 +344,43 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
             建议 3 条，学员读得好时随机播放
           </Text>
           <span style={{ flex: 1 }} />
-          <Button
-            size="small"
-            loading={batchTtsLoading}
-            disabled={!missingFeedbackAudio}
-            onClick={() => void runBatchTts()}
-          >
-            TTS 补全缺失（{missingFeedbackAudio}）
-          </Button>
           <Button size="small" icon={<PlusOutlined />} onClick={addFeedback}>
             添加
           </Button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
+            肯定语音音色
+          </Text>
+          <TtsVoiceSelect
+            value={feedbackVoiceId}
+            onChange={setFeedbackVoiceId}
+            style={{ width: 150 }}
+            disabled={redubLoading || batchTtsLoading}
+          />
+          <Button
+            size="small"
+            loading={batchTtsLoading}
+            disabled={!missingFeedbackAudio || redubLoading}
+            onClick={() => void runBatchTts()}
+          >
+            补全缺失（{missingFeedbackAudio}）
+          </Button>
+          <Popconfirm
+            title={`用音色 ${resolveFeedbackVoiceId()} 重配全部 ${redubbableCount} 条肯定语音？`}
+            description="会覆盖这些反馈条已有的音频"
+            okText="重配"
+            onConfirm={() => void runRedubAll()}
+          >
+            <Button
+              size="small"
+              icon={<SoundOutlined />}
+              loading={redubLoading}
+              disabled={!redubbableCount || batchTtsLoading}
+            >
+              全部重配（{redubbableCount}）
+            </Button>
+          </Popconfirm>
         </div>
         <Space direction="vertical" size={6} style={{ width: '100%' }}>
           {feedbacks.length === 0 ? (
@@ -271,7 +393,7 @@ export default function FollowReadingComponentForm({ value, onChange }: Props) {
                 key={index}
                 index={index}
                 item={item}
-                voiceId={voiceId}
+                voiceId={resolveFeedbackVoiceId()}
                 showDetail={advancedOpen}
                 onUpdate={(patch) => updateFeedback(index, patch)}
                 onRemove={() => removeFeedback(index)}
