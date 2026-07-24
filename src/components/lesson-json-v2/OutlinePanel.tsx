@@ -149,8 +149,11 @@ export default function OutlinePanel({ issues }: Props) {
     if (!ctxMenu) return
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null
-      // 点在菜单内部时交给菜单自己的 onClick 处理
-      if (target?.closest('.ant-dropdown')) return
+      // 点在菜单内部时交给菜单自己的 onClick 处理。
+      // 注意：子菜单（如「向上添加节点」的类型列表）渲染在独立浮层
+      // .ant-dropdown-menu-submenu-popup 中，不在 .ant-dropdown 内，
+      // 漏掉它会导致 mousedown 先卸载菜单、click 永远不触发。
+      if (target?.closest('.ant-dropdown, .ant-dropdown-menu-submenu-popup')) return
       setCtxMenu(null)
     }
     const onKeyDown = (e: KeyboardEvent) => {
