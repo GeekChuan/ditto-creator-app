@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber, Switch } from 'antd'
+import { Button, Form, Input, InputNumber, Space, Switch } from 'antd'
 import type {
   AtbActivity,
   AtbSrcAsset,
@@ -228,6 +228,31 @@ export default function ComponentEditor({ component, activity, src, onChange }: 
               value={component.img_height ?? 0}
               onChange={(v) => onChange({ ...component, img_height: v ?? 0 })}
             />
+          </Form.Item>
+        </Form>
+      )
+    case 'teaching_board':
+      return (
+        <Form layout="vertical" size="small">
+          <Form.Item
+            label="TeachingBoard"
+            help="请在独立白板工作台中可视化编辑，再将导出的 document 粘贴或导入课程。"
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Space wrap>
+                <Button onClick={() => window.open('/teaching-board-studio', '_blank')}>
+                  打开 TeachingBoard Studio
+                </Button>
+                <Button onClick={() => void navigator.clipboard.writeText(JSON.stringify(component, null, 2))}>
+                  复制当前组件 JSON
+                </Button>
+              </Space>
+              <Input.TextArea
+                rows={10}
+                readOnly
+                value={JSON.stringify(component.document, null, 2)}
+              />
+            </Space>
           </Form.Item>
         </Form>
       )

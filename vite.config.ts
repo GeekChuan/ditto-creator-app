@@ -17,4 +17,15 @@ export default defineConfig(({ mode }) => ({
     alias: mode === 'localhost' ? localPackageAliases : {},
     dedupe: ['react', 'react-dom'],
   },
+  server: mode === 'localhost'
+    ? {
+        proxy: {
+          '/api-proxy': {
+            target: 'http://127.0.0.1:8000',
+            changeOrigin: true,
+            rewrite: (requestPath) => requestPath.replace(/^\/api-proxy/, ''),
+          },
+        },
+      }
+    : undefined,
 }))

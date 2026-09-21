@@ -14,6 +14,7 @@ export const COMPONENT_LABELS: Record<SceneComponentType, string> = {
   material_follow_reading_anchor: '自学课跟读锚点',
   knowledge_card: '知识卡片',
   whiteboard: '白板图',
+  teaching_board: 'TeachingBoard',
   video_play: '视频播放',
   narrative_video: '讲解视频',
   scenario_video: '场景视频',

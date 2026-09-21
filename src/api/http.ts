@@ -6,6 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 /** 直连本机 uvicorn 时没有网关，课程/权益等路径需带 /api/v1；线上仍走 /courses 等短路径 */
 const needsLocalApiV1Prefix = (() => {
+  if (API_BASE_URL.startsWith('/')) return true
   try {
     const host = new URL(API_BASE_URL).hostname
     return host === 'localhost' || host === '127.0.0.1'
@@ -23,6 +24,24 @@ const refreshHttp = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
 })
+
+interface ApiEnvelope<T> {
+  code: number
+  message: string
+  data: T
+}
+
+function unwrapApiEnvelope<T>(payload: T | ApiEnvelope<T>): T {
+  if (
+    payload
+    && typeof payload === 'object'
+    && 'code' in payload
+    && 'data' in payload
+  ) {
+    return (payload as ApiEnvelope<T>).data
+  }
+  return payload as T
+}
 
 let isRefreshing = false
 let refreshPromise: Promise<string | null> | null = null
@@ -77,9 +96,10 @@ const tryRefreshToken = async (): Promise<string | null> => {
   const refreshToken = getRefreshToken()
   if (!refreshToken) return null
   try {
-    const { data } = await refreshHttp.post<AuthTokenResponse>(authRefreshPath, {
+    const response = await refreshHttp.post<AuthTokenResponse | ApiEnvelope<AuthTokenResponse>>(authRefreshPath, {
       refresh_token: refreshToken,
     })
+    const data = unwrapApiEnvelope(response.data)
     setAuth(data.access_token, data.refresh_token, data.user)
     scheduleAccessTokenRefresh()
     return data.access_token
@@ -103,7 +123,7 @@ http.interceptors.request.use((config) => {
 })
 
 http.interceptors.response.use(
-  (res) => res.data,
+  (res) => unwrapApiEnvelope(res.data),
   async (error) => {
     const originalRequest = error.config as { _retry?: boolean; headers?: Record<string, string>; url?: string }
     const requestUrl = String(originalRequest?.url || '')

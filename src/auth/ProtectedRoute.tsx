@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { Spin } from 'antd'
 import { useAuth } from './AuthProvider'
+import { isSuperAdmin } from '../types/user'
 
 export default function ProtectedRoute({ requireSuperAdmin = false }: { requireSuperAdmin?: boolean }) {
   const { user, loading } = useAuth()
@@ -11,9 +12,8 @@ export default function ProtectedRoute({ requireSuperAdmin = false }: { requireS
   if (!user) {
     return <Navigate to="/login" replace />
   }
-  if (requireSuperAdmin && user.role !== 'super_admin') {
+  if (requireSuperAdmin && !isSuperAdmin(user)) {
     return <Navigate to="/dashboard" replace />
   }
   return <Outlet />
 }
-

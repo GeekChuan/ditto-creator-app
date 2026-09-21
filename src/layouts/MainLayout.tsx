@@ -17,8 +17,10 @@ import {
   FieldTimeOutlined,
   SoundOutlined,
   AuditOutlined,
+  HighlightOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthProvider'
+import { isSuperAdmin } from '../types/user'
 
 const { Sider, Header, Content } = Layout
 const { Title } = Typography
@@ -38,7 +40,7 @@ export default function MainLayout() {
     { key: '/lexicon', icon: <BookOutlined />, label: '单词库' },
     { key: '/image-creative', icon: <PictureOutlined />, label: '图片创意' },
     { key: '/subtitle-timing', icon: <FieldTimeOutlined />, label: '字幕打轴器' },
-    ...(user?.role === 'super_admin'
+    ...(isSuperAdmin(user)
       ? [
           { key: '/tools', icon: <ExperimentOutlined />, label: '工具中心' },
           { key: '/voice-clone', icon: <SoundOutlined />, label: '语音克隆' },
@@ -50,6 +52,7 @@ export default function MainLayout() {
           { key: '/lesson-image-gen-v2', icon: <PictureOutlined />, label: '课节图片生成器 V2' },
           { key: '/lesson-json-design', icon: <CodeOutlined />, label: '课程 JSON 设计' },
           { key: '/lesson-json-design-v2', icon: <CodeOutlined />, label: '课程 JSON 设计 V2' },
+          { key: '/teaching-board-studio', icon: <HighlightOutlined />, label: 'TeachingBoard Studio' },
         ]
       : []),
   ]

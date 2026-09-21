@@ -22,12 +22,18 @@ import LessonImageGenPage from '../pages/LessonImageGenPage'
 import LessonImageGenV2Page from '../pages/lesson-image-gen-v2/LessonImageGenV2Page'
 import SubtitleTimingPage from '../pages/SubtitleTimingPage'
 import VoiceClonePage from '../pages/VoiceClonePage'
+import MarkdownMobileReaderPage from '../pages/markdown-mobile-reader/MarkdownMobileReaderPage'
+import TeachingBoardStudioPage from '../pages/teaching-board-studio/TeachingBoardStudioPage'
 import ProtectedRoute from '../auth/ProtectedRoute'
 
 export default function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/markdown-mobile-reader" element={<MarkdownMobileReaderPage />} />
+      {import.meta.env.DEV ? (
+        <Route path="/dev/teaching-board-studio" element={<TeachingBoardStudioPage />} />
+      ) : null}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -48,6 +54,7 @@ export default function AppRouter() {
             <Route path="homework-review" element={<HomeworkReviewPage />} />
             <Route path="lesson-json-design" element={<LessonJsonDesignPage />} />
             <Route path="lesson-json-design-v2" element={<LessonJsonDesignV2Page />} />
+            <Route path="teaching-board-studio" element={<TeachingBoardStudioPage />} />
             <Route path="tools" element={<ToolsPage />} />
             <Route path="tools/:toolId" element={<ToolDetailPage />} />
             <Route path="agents/:agentId" element={<AgentDetailPage />} />

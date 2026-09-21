@@ -40,6 +40,7 @@ export const COMPONENT_TYPES = [
   'material_follow_reading_anchor',
   'knowledge_card',
   'whiteboard',
+  'teaching_board',
   'video_play',
   'narrative_video',
   'scenario_video',
@@ -192,6 +193,15 @@ export function createDefaultComponent(type: SceneComponentType, src: AtbSrcAsse
       return { type: 'knowledge_card', tag: '', title: '', content: '', collocations: [] }
     case 'whiteboard':
       return { type: 'whiteboard', img_url: '', img_width: 0, img_height: 0 }
+    case 'teaching_board':
+      return {
+        type: 'teaching_board',
+        document: {
+          schema: 'ditto.teaching-board.v1',
+          board_id: crypto.randomUUID(),
+          blocks: [],
+        },
+      }
     case 'video_play':
       return {
         type: 'video_play',

@@ -121,6 +121,11 @@ export interface WhiteboardComponent {
   img_height?: number
 }
 
+export interface TeachingBoardComponent {
+  type: 'teaching_board'
+  document: import('./teachingBoard').TeachingBoardDocument
+}
+
 export interface VideoPlayComponent {
   type: 'video_play'
   /** 引用 src 中 type=video 的资源 */
@@ -363,6 +368,7 @@ export type SceneComponent =
   | MaterialFollowReadingAnchorComponent
   | KnowledgeCardComponent
   | WhiteboardComponent
+  | TeachingBoardComponent
   | VideoPlayComponent
   | NarrativeVideoComponent
   | ScenarioVideoComponent
@@ -401,7 +407,8 @@ export interface LectureWithPracticeActivity {
   type: 'lecture_with_practice'
   layout: 'react_teaching_with_practice' | string
   description?: string
-  video_source_id: string
+  /** V1 顶部课程视频；纯 TeachingBoard Activity 可省略。 */
+  video_source_id?: string
   end_signal?: string
   nodes: SceneNode[]
 }
